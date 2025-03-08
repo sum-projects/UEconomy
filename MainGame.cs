@@ -11,25 +11,28 @@ namespace UEconomy;
 public class MainGame : Game
 {
     private GameEngine _gameEngine;
+    private GraphicsEngine _graphicsEngine;
 
     public MainGame()
     {
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
 
-        _gameEngine = new GameEngine(new GraphicsDeviceManager(this));
+        _gameEngine = new GameEngine();
+        _graphicsEngine = new GraphicsEngine(new GraphicsDeviceManager(this), _gameEngine);
     }
 
     protected override void Initialize()
     {
-        _gameEngine.Initialize();
+        _gameEngine.Initialize(_graphicsEngine.CellSize, _graphicsEngine.GridWidth, _graphicsEngine.GridHeight);
+        _graphicsEngine.Initialize();
 
         base.Initialize();
     }
 
     protected override void LoadContent()
     {
-        _gameEngine.LoadContent(Content.Load<SpriteFont>("Arial"));
+        _graphicsEngine.LoadContent(Content.Load<SpriteFont>("Arial"));
 
         base.LoadContent();
     }
@@ -46,6 +49,7 @@ public class MainGame : Game
 
 
         _gameEngine.Update(gameTime);
+        _graphicsEngine.Update(gameTime);
 
         base.Update(gameTime);
     }
@@ -54,7 +58,7 @@ public class MainGame : Game
     {
         GraphicsDevice.Clear(new Color(40, 45, 55));
 
-        _gameEngine.Draw(gameTime);
+        _graphicsEngine.Draw(gameTime);
 
         base.Draw(gameTime);
     }
