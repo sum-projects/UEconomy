@@ -15,7 +15,7 @@ public class MainGame : Microsoft.Xna.Framework.Game
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
 
-        _gameEngine = new GameEngine();
+        _gameEngine = new GameEngine(new Stats());
         _graphicsEngine = new GraphicsEngine(new GraphicsDeviceManager(this), _gameEngine);
     }
 

@@ -1495,7 +1495,7 @@ public class GraphicsEngine
         {
             _spriteBatch.DrawString(
                 _font,
-                $"{_gameEngine._globalStats.GetValueOrDefault("Total Population"):F0}",
+                $"{_gameEngine.Stats.GlobalStats.GetValueOrDefault("Total Population"):F0}",
                 new Vector2(panelX + sectionMargin + 10, yPos),
                 Color.White,
                 0f,
@@ -1513,7 +1513,7 @@ public class GraphicsEngine
             foreach (var resource in _gameEngine._market.GetAllResources())
             {
                 // Kolor tekstu zależny od ilości zasobu (im więcej, tym jaśniejszy)
-                float amount = _gameEngine._globalStats.GetValueOrDefault($"Total {resource}");
+                float amount = _gameEngine.Stats.GlobalStats.GetValueOrDefault($"Total {resource}");
                 float brightness = Math.Min(1.0f, 0.7f + amount / 10000f);
 
                 _spriteBatch.DrawString(
@@ -1536,7 +1536,7 @@ public class GraphicsEngine
         {
             foreach (var resource in _gameEngine._market.GetAllResources())
             {
-                float production = _gameEngine._globalStats.GetValueOrDefault($"Production {resource}");
+                float production = _gameEngine.Stats.GlobalStats.GetValueOrDefault($"Production {resource}");
                 // Kolor zależny od wydajności (zielony dla wysokiej produkcji)
                 Color productionColor = production > 1000 ? new Color(0.7f, 1.0f, 0.7f) :
                     production > 500 ? Color.White :
@@ -1588,9 +1588,9 @@ public class GraphicsEngine
         {
             foreach (var resource in _gameEngine._market.GetAllResources())
             {
-                if (_gameEngine._globalStats.ContainsKey($"Satisfaction {resource}"))
+                if (_gameEngine.Stats.GlobalStats.ContainsKey($"Satisfaction {resource}"))
                 {
-                    float satisfaction = _gameEngine._globalStats[$"Satisfaction {resource}"];
+                    float satisfaction = _gameEngine.Stats.GlobalStats[$"Satisfaction {resource}"];
                     Color satColor = satisfaction > 0.8f
                         ? new Color(0.5f, 1.0f, 0.5f)
                         : (satisfaction > 0.5f ? new Color(1.0f, 1.0f, 0.5f) : new Color(1.0f, 0.5f, 0.5f));

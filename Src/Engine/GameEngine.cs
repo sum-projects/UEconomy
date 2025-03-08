@@ -12,12 +12,14 @@ public class GameEngine
     public List<Population> _populations { get; private set; }
     public List<Province> _provinces { get; private set; }
 
-    public Dictionary<string, float> _globalStats { get; private set; } = new();
     public Dictionary<string, List<float>> _priceHistory { get; private set; } = new();
     public Dictionary<string, float> _totalTraded { get; private set; } = new();
 
-    public GameEngine()
+    public Stats Stats;
+
+    public GameEngine(Stats stats)
     {
+        Stats = stats;
     }
 
     public void Initialize(int cellSize, int gridWidth, int gridHeight)
@@ -105,7 +107,7 @@ public class GameEngine
                 }
             }
 
-            UpdateGlobalStats();
+            Stats.UpdateGlobalStats(_market.GetAllResources(), _populations, _provinces);
         }
     }
 
@@ -186,72 +188,5 @@ public class GameEngine
         {
             _totalTraded[resource] = _market.GetLastTradedAmount(resource);
         }
-    }
-
-    private void UpdateGlobalStats()
-    {
-        // Całkowita populacja
-        _globalStats["Total Population"] = _populations.Sum(p => p.Size);
-
-        // Całkowite zasoby
-        foreach (var resource in _market.GetAllResources())
-        {
-            _globalStats[$"Total {resource}"] = _provinces.Sum(p =>
-                p.Resources.TryGetValue(resource, out var pResource) ? pResource : 0);
-
-            // Globalna produkcja
-            var totalProduction = 0.0f;
-            foreach (var province in _provinces)
-            {
-                totalProduction += province.Buildings
-                    .Where(building => building.IsActive && building.ProductionRates.ContainsKey(resource))
-                    .Sum(building => building.ProductionRates[resource] * building.CurrentWorkers /
-                        building.WorkersCapacity * building.Level);
-
-                // Dodaj produkcję niezatrudnionych
-                if (resource == "Zboże" || resource == "Meble" || resource == "Ubrania")
-                {
-                    var subsistenceFactor = province.AvailableWorkers / 10.0f;
-                    if (resource == "Zboże")
-                        totalProduction += 10.0f * subsistenceFactor;
-                    else
-                        totalProduction += 1.0f * subsistenceFactor;
-                }
-            }
-
-            _globalStats[$"Production {resource}"] = totalProduction;
-
-            // Średnie zapotrzebowanie na zasoby
-            var totalDemand = _populations
-                .Where(population => population.Needs.ContainsKey(resource))
-                .Sum(population => population.Needs[resource] * population.Size);
-
-            _globalStats[$"{resource} Demand"] = totalDemand;
-
-            // Średnie zadowolenie z zaspokojenia potrzeb
-            var totalSatisfaction = 0.0f;
-            var populationsWithNeed = 0;
-            foreach (
-                var population in _populations.Where(population => population.Satisfaction.ContainsKey(resource))
-            )
-            {
-                totalSatisfaction += population.Satisfaction[resource];
-                populationsWithNeed++;
-            }
-
-            if (populationsWithNeed > 0)
-            {
-                _globalStats[$"Satisfaction {resource}"] = totalSatisfaction / populationsWithNeed;
-            }
-        }
-
-        // Całkowita zamożność
-        _globalStats["Total Wealth"] = _populations.Sum(p => p.Wealth);
-
-        // Suma pracowników w budynkach
-        _globalStats["Employed Workers"] = _provinces.Sum(p => p.Buildings.Sum(b => b.CurrentWorkers));
-
-        // Całkowita liczba dostępnych pracowników
-        _globalStats["Available Workers"] = _provinces.Sum(p => p.AvailableWorkers);
     }
 }
