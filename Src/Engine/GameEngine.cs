@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using UEconomy.Engine;
+using UEconomy.Game;
 
-namespace UEconomy;
+namespace UEconomy.Engine;
 
 public class GameEngine
 {

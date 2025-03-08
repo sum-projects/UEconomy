@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 
-namespace UEconomy.Engine;
+namespace UEconomy.Game;
 
 public class Province
 {

@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using UEconomy.Engine;
 
 namespace UEconomy;
 
-public class MainGame : Game
+public class MainGame : Microsoft.Xna.Framework.Game
 {
     private GameEngine _gameEngine;
     private GraphicsEngine _graphicsEngine;

@@ -1,4 +1,4 @@
-﻿namespace UEconomy.Engine;
+﻿namespace UEconomy.Game;
 
 public class TradeOffer
 {

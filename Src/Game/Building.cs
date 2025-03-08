@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace UEconomy.Engine;
+namespace UEconomy.Game;
 
 public class Building
 {
