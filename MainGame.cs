@@ -24,6 +24,9 @@ public class MainGame : Game
     private List<Population> _populations;
 
     private Province _selectedProvince;
+    private Building _selectedBuilding;
+    private int _selectedBuildingIndex = -1;
+
     private MouseState _previousMouseState;
     private SpriteFont _font;
 
@@ -43,6 +46,7 @@ public class MainGame : Game
 
     protected override void Initialize()
     {
+        // Inicjalizacja prowincji
         _provinces = new List<Province>();
         for (var x = 0; x < _gridWidth; x++)
         {
@@ -55,38 +59,51 @@ public class MainGame : Game
                     Position = new Vector2(x * _cellSize, y * _cellSize),
                     Resources = new Dictionary<string, float>
                     {
-                        { "Zboże", x % 3 == 0 ? 100 : 20 },
-                        { "Drewno", y % 2 == 0 ? 80 : 10 },
-                        { "Żelazo", (x + y) % 4 == 0 ? 50 : 0 }
+                        { "Zboże", 50 },
+                        { "Drewno", 50 },
+                        { "Żelazo", 30 },
+                        { "Węgiel", 30 },
+                        { "Meble", 20 },
+                        { "Ubrania", 20 }
                     }
                 };
+
+                // Dodaj przykładowe budynki w zależności od lokalizacji
+                if (x % 3 == 0)
+                    province.AddBuilding("FieldCrop");
+                if (y % 3 == 0)
+                    province.AddBuilding("Sawmill");
+                if ((x + y) % 4 == 0)
+                    province.AddBuilding("IronMine");
+                if ((x + y) % 5 == 0)
+                    province.AddBuilding("CoalMine");
+                if (x % 4 == 0 && y % 2 == 0)
+                    province.AddBuilding("FurnitureFactory");
+                if (x % 2 == 0 && y % 4 == 0)
+                    province.AddBuilding("TailorShop");
+
                 _provinces.Add(province);
             }
         }
 
+        // Inicjalizacja populacji
         _populations = new List<Population>();
         Random random = new();
 
         foreach (
-            var population in _provinces.Select(
-                province => new Population
-                {
-                    Size = random.Next(100, 1000),
-                    Needs = new Dictionary<string, float>
-                    {
-                        { "Zboże", 0.5f },
-                        { "Drewno", 0.3f },
-                        { "Żelazo", 0.1f }
-                    },
-                    Wealth = random.Next(500, 2000),
-                    ProvinceId = province.Id
-                }))
+            var population in _provinces.Select(province => new Population
+            {
+                Size = random.Next(100, 1000),
+                Wealth = random.Next(500, 2000),
+                ProvinceId = province.Id
+            }))
         {
+            population.InitializeNeeds();
             _populations.Add(population);
         }
 
         _market = new Market();
-        _market.Initialize(new[] { "Zboże", "Drewno", "Żelazo" });
+        _market.Initialize(new[] { "Zboże", "Drewno", "Żelazo", "Węgiel", "Meble", "Ubrania" });
 
         base.Initialize();
     }
@@ -136,6 +153,74 @@ public class MainGame : Game
             {
                 _selectedProvince = province;
                 break;
+            }
+
+            var panelX = _gridWidth * _cellSize + 10;
+            const int panelY = 10;
+            const int panelWidth = 200;
+            const int panelHeight = 400;
+
+            if (_selectedProvince != null && _selectedBuildingIndex >= 0 &&
+                _selectedBuildingIndex < _selectedProvince.Buildings.Count)
+            {
+                var buildingBox = new Rectangle(
+                    panelX + 20,
+                    panelY + 200 + (_selectedBuildingIndex * 30),
+                    200,
+                    25
+                );
+
+                if (buildingBox.Contains(currentMouseState.Position))
+                {
+                    _selectedBuilding = _selectedProvince.Buildings[_selectedBuildingIndex];
+                }
+
+                if (_selectedBuilding != null)
+                {
+                    var upgradeButton = new Rectangle(
+                        panelX + 180,
+                        panelY + 200 + (_selectedBuildingIndex * 30),
+                        20,
+                        20
+                    );
+
+                    if (upgradeButton.Contains(currentMouseState.Position))
+                    {
+                        var population = _populations.Find(p => p.ProvinceId == _selectedProvince.Id);
+                        if (population != null && population.Wealth >= _selectedBuilding.UpgradeCost)
+                        {
+                            population.Wealth -= _selectedBuilding.UpgradeCost;
+                            _selectedBuilding.Upgrade();
+                        }
+                    }
+                }
+            }
+
+            if (_selectedProvince != null)
+            {
+                string[] buildingTypes =
+                    { "FieldCrop", "Sawmill", "IronMine", "CoalMine", "FurnitureFactory", "TailorShop" };
+
+                for (var i = 0; i < buildingTypes.Length; i++)
+                {
+                    var buildButton = new Rectangle(
+                        panelX + 10 + (i % 3) * 90,
+                        panelY + panelHeight - 80 + (i / 3) * 35,
+                        80,
+                        30
+                    );
+
+                    if (buildButton.Contains(currentMouseState.Position))
+                    {
+                        var buildCost = 500;
+                        var population = _populations.Find(p => p.ProvinceId == _selectedProvince.Id);
+                        if (population != null && population.Wealth >= buildCost)
+                        {
+                            population.Wealth -= buildCost;
+                            _selectedProvince.AddBuilding(buildingTypes[i]);
+                        }
+                    }
+                }
             }
         }
 
@@ -220,10 +305,11 @@ public class MainGame : Game
 
     private void DrawGlobalStatsPanel()
     {
+        // Rysuj tło panelu
         var panelX = _gridWidth * _cellSize + 10;
-        const int panelY = 10;
-        const int panelWidth = 200;
-        const int panelHeight = 400;
+        var panelY = 10;
+        var panelWidth = 220;
+        var panelHeight = 550;
 
         _spriteBatch.Draw(
             _uiBackground,
@@ -231,6 +317,7 @@ public class MainGame : Game
             new Color(0, 0, 0, 180)
         );
 
+        // Nagłówek
         _spriteBatch.DrawString(
             _font,
             "STATYSTYKI GLOBALNE",
@@ -238,7 +325,8 @@ public class MainGame : Game
             Color.Yellow
         );
 
-        var yPos = panelY + 40;
+        // Ceny rynkowe
+        int yPos = panelY + 40;
         _spriteBatch.DrawString(
             _font,
             "Ceny rynkowe:",
@@ -258,6 +346,7 @@ public class MainGame : Game
             yPos += 20;
         }
 
+        // Całkowita populacja
         yPos += 10;
         _spriteBatch.DrawString(
             _font,
@@ -266,6 +355,7 @@ public class MainGame : Game
             Color.White
         );
 
+        // Całkowite zasoby
         yPos += 25;
         _spriteBatch.DrawString(
             _font,
@@ -286,6 +376,28 @@ public class MainGame : Game
             yPos += 20;
         }
 
+        // Globalna produkcja
+        yPos += 10;
+        _spriteBatch.DrawString(
+            _font,
+            "Globalna produkcja (na turę):",
+            new Vector2(panelX + 10, yPos),
+            Color.White
+        );
+
+        yPos += 20;
+        foreach (var resource in _market.GetAllResources())
+        {
+            _spriteBatch.DrawString(
+                _font,
+                $"{resource}: {_globalStats.GetValueOrDefault($"Production {resource}"):F0}",
+                new Vector2(panelX + 20, yPos),
+                Color.White
+            );
+            yPos += 20;
+        }
+
+        // Wymiana handlowa
         yPos += 10;
         _spriteBatch.DrawString(
             _font,
@@ -304,6 +416,33 @@ public class MainGame : Game
                 Color.White
             );
             yPos += 20;
+        }
+
+        // Średnie zadowolenie potrzeb
+        yPos += 10;
+        _spriteBatch.DrawString(
+            _font,
+            "Średnie zadowolenie potrzeb:",
+            new Vector2(panelX + 10, yPos),
+            Color.White
+        );
+
+        yPos += 20;
+        foreach (var resource in _market.GetAllResources())
+        {
+            if (_globalStats.ContainsKey($"Satisfaction {resource}"))
+            {
+                var satisfaction = _globalStats[$"Satisfaction {resource}"];
+                var satColor = satisfaction > 0.8f ? Color.Green : (satisfaction > 0.5f ? Color.Yellow : Color.Red);
+
+                _spriteBatch.DrawString(
+                    _font,
+                    $"{resource}: {(satisfaction * 100):F0}%",
+                    new Vector2(panelX + 20, yPos),
+                    satColor
+                );
+                yPos += 20;
+            }
         }
     }
 
@@ -416,34 +555,265 @@ public class MainGame : Game
             new Vector2(panelX + panelWidth - 20, panelY + 10),
             Color.Red
         );
+
+        // Budynki w prowincji
+        yPos += 20;
+        _spriteBatch.DrawString(
+            _font,
+            "Budynki:",
+            new Vector2(panelX + 10, yPos),
+            Color.White
+        );
+
+        yPos += 25;
+        _selectedBuildingIndex = -1;
+
+        for (var i = 0; i < _selectedProvince.Buildings.Count; i++)
+        {
+            var building = _selectedProvince.Buildings[i];
+            var buildingColor = building.IsActive ? Color.White : Color.Gray;
+
+            // Podświetl, jeśli to wybrany budynek
+            if (_selectedBuilding != null && _selectedBuilding.Id == building.Id)
+            {
+                buildingColor = Color.Yellow;
+            }
+
+            _spriteBatch.DrawString(
+                _font,
+                $"{building.Name} (Lv.{building.Level}) [{building.CurrentWorkers}/{building.WorkersCapacity}]",
+                new Vector2(panelX + 20, yPos),
+                buildingColor
+            );
+
+            // Rysuj przycisk ulepszenia
+            _spriteBatch.DrawString(
+                _font,
+                "+",
+                new Vector2(panelX + 180, yPos),
+                Color.Green
+            );
+
+            // Zapisz indeks budynku pod kursorem
+            if (new Rectangle(panelX + 20, yPos, 150, 20).Contains(Mouse.GetState().Position))
+            {
+                _selectedBuildingIndex = i;
+            }
+
+            yPos += 30;
+        }
+
+        // Rysuj przyciski do budowy nowych budynków
+        yPos = panelY + panelHeight - 80;
+        _spriteBatch.DrawString(
+            _font,
+            "Zbuduj nowy budynek:",
+            new Vector2(panelX + 10, yPos - 25),
+            Color.White
+        );
+
+        string[] buildingNames = { "Pole", "Tartak", "Kopalnia Fe", "Kopalnia C", "Fabryka", "Szwalnia" };
+        for (var i = 0; i < buildingNames.Length; i++)
+        {
+            var buttonX = panelX + 10 + (i % 3) * 90;
+            var buttonY = yPos + (i / 3) * 35;
+
+            // Tło przycisku
+            _spriteBatch.Draw(
+                _uiBackground,
+                new Rectangle(buttonX, buttonY, 80, 30),
+                new Color(80, 80, 100, 220)
+            );
+
+            // Tekst przycisku
+            _spriteBatch.DrawString(
+                _font,
+                buildingNames[i],
+                new Vector2(buttonX + 5, buttonY + 5),
+                Color.White
+            );
+        }
+
+// Jeśli budynek jest wybrany, pokaż szczegóły
+        if (_selectedBuilding != null)
+        {
+            // Tło dla szczegółów budynku
+            _spriteBatch.Draw(
+                _uiBackground,
+                new Rectangle(panelX + panelWidth + 10, panelY, 200, 280),
+                new Color(0, 0, 50, 230)
+            );
+
+            var detailsX = panelX + panelWidth + 20;
+            var detailsY = panelY + 10;
+
+            // Nagłówek
+            _spriteBatch.DrawString(
+                _font,
+                $"{_selectedBuilding.Name} (Poziom {_selectedBuilding.Level})",
+                new Vector2(detailsX, detailsY),
+                Color.Yellow
+            );
+
+            // Pracownicy
+            detailsY += 30;
+            _spriteBatch.DrawString(
+                _font,
+                $"Pracownicy: {_selectedBuilding.CurrentWorkers}/{_selectedBuilding.WorkersCapacity}",
+                new Vector2(detailsX, detailsY),
+                Color.White
+            );
+
+            // Status
+            detailsY += 20;
+            _spriteBatch.DrawString(
+                _font,
+                $"Status: {(_selectedBuilding.IsActive ? "Aktywny" : "Nieaktywny")}",
+                new Vector2(detailsX, detailsY),
+                _selectedBuilding.IsActive ? Color.Green : Color.Red
+            );
+
+            // Produkcja
+            detailsY += 30;
+            _spriteBatch.DrawString(
+                _font,
+                "Produkcja:",
+                new Vector2(detailsX, detailsY),
+                Color.White
+            );
+
+            detailsY += 20;
+            foreach (var resource in _selectedBuilding.ProductionRates)
+            {
+                var actualProduction = resource.Value * _selectedBuilding.CurrentWorkers /
+                    _selectedBuilding.WorkersCapacity * _selectedBuilding.Level;
+                _spriteBatch.DrawString(
+                    _font,
+                    $"{resource.Key}: {actualProduction:F1}/tura",
+                    new Vector2(detailsX + 10, detailsY),
+                    Color.White
+                );
+                detailsY += 20;
+            }
+
+            // Zużycie
+            if (_selectedBuilding.ConsumptionRates.Count > 0)
+            {
+                detailsY += 10;
+                _spriteBatch.DrawString(
+                    _font,
+                    "Zużycie:",
+                    new Vector2(detailsX, detailsY),
+                    Color.White
+                );
+
+                detailsY += 20;
+                foreach (var resource in _selectedBuilding.ConsumptionRates)
+                {
+                    var actualConsumption = resource.Value * _selectedBuilding.CurrentWorkers /
+                        _selectedBuilding.WorkersCapacity * _selectedBuilding.Level;
+                    _spriteBatch.DrawString(
+                        _font,
+                        $"{resource.Key}: {actualConsumption:F1}/tura",
+                        new Vector2(detailsX + 10, detailsY),
+                        Color.White
+                    );
+                    detailsY += 20;
+                }
+            }
+
+            // Koszt ulepszenia
+            detailsY += 30;
+            _spriteBatch.DrawString(
+                _font,
+                $"Koszt ulepszenia: {_selectedBuilding.UpgradeCost}$",
+                new Vector2(detailsX, detailsY),
+                Color.White
+            );
+
+            // Przycisk ulepszenia
+            detailsY += 30;
+            var canAffordUpgrade = false;
+            if (population != null)
+            {
+                canAffordUpgrade = population.Wealth >= _selectedBuilding.UpgradeCost;
+            }
+
+            var upgradeColor = canAffordUpgrade ? Color.Green : Color.Gray;
+
+            // Tło przycisku
+            _spriteBatch.Draw(
+                _uiBackground,
+                new Rectangle(detailsX, detailsY, 180, 30),
+                new Color(60, 60, 80, 220)
+            );
+
+            // Tekst przycisku
+            _spriteBatch.DrawString(
+                _font,
+                "Ulepsz budynek",
+                new Vector2(detailsX + 10, detailsY + 5),
+                upgradeColor
+            );
+        }
     }
 
     private void SimulateEconomy()
     {
+        // Aktualizuj produkcję w każdej prowincji
+        foreach (var province in _provinces)
+        {
+            var population = _populations.Find(p => p.ProvinceId == province.Id);
+            if (population != null)
+            {
+                province.UpdateProduction(population);
+            }
+        }
+
+        // Aktualizuj produkcję w każdej prowincji
         _market.ResetOffers();
 
+        // Resetujemy statystyki handlowe
         foreach (var resource in _market.GetAllResources())
         {
             _totalTraded[resource] = 0;
         }
 
+        // Każda populacja próbuje zaspokoić swoje potrzeby
         foreach (var population in _populations)
         {
+            // Znajdź prowincję, w której znajduje się populacja
             var province = _provinces.Find(p => p.Id == population.ProvinceId);
-            foreach (var (resourceName, demandAmount) in population.Needs)
-            {
-                var totalDemand = demandAmount * population.Size;
 
+            // Pobierz zasoby z prowincji i oblicz poziom zadowolenia
+            var availableResources = new Dictionary<string, float>(province.Resources);
+            population.ConsumptionStep(availableResources);
+
+            // Aktualizuj zasoby prowincji po konsumpcji
+            province.Resources = availableResources;
+
+            // Oblicz maksymalne ceny, jakie populacja jest gotowa zapłacić
+            var maxPrices = population.CalculateMaxPrices();
+
+            foreach (var (resourceName, demandPerCapita) in population.Needs)
+            {
+                var totalDemand = demandPerCapita * population.Size;
+
+                // Sprawdź, ile zasobów jest dostępnych w prowincji
                 if (province.Resources.TryGetValue(resourceName, out var availableResource) && availableResource > 0)
                 {
+                    // Używaj lokalnych zasobów najpierw
                     var usedResource = Math.Min(availableResource, totalDemand);
                     province.Resources[resourceName] -= usedResource;
                     totalDemand -= usedResource;
                 }
 
+                // Jeśli nadal są niezaspokojone potrzeby, stwórz popyt na rynku
                 if (totalDemand > 0)
                 {
-                    var maxPrice = population.Wealth / (population.Size * 2);
+                    var maxPrice = maxPrices.TryGetValue(resourceName, out var price)
+                        ? price
+                        : population.Wealth / (population.Size * 2);
                     _market.AddDemand(resourceName, totalDemand, maxPrice, population);
                 }
             }
@@ -469,25 +839,68 @@ public class MainGame : Game
 
     private void UpdateGlobalStats()
     {
+        // Całkowita populacja
         _globalStats["Total Population"] = _populations.Sum(p => p.Size);
 
+        // Całkowite zasoby
         foreach (var resource in _market.GetAllResources())
         {
             _globalStats[$"Total {resource}"] = _provinces.Sum(p =>
                 p.Resources.TryGetValue(resource, out var pResource) ? pResource : 0);
 
-            float totalDemand = 0;
-            foreach (var population in _populations)
+            // Globalna produkcja
+            var totalProduction = 0.0f;
+            foreach (var province in _provinces)
             {
-                if (population.Needs.TryGetValue(resource, out var need))
+                totalProduction += province.Buildings
+                    .Where(building => building.IsActive && building.ProductionRates.ContainsKey(resource))
+                    .Sum(building => building.ProductionRates[resource] * building.CurrentWorkers /
+                        building.WorkersCapacity * building.Level);
+
+                // Dodaj produkcję niezatrudnionych
+                if (resource == "Zboże" || resource == "Meble" || resource == "Ubrania")
                 {
-                    totalDemand += need * population.Size;
+                    var subsistenceFactor = province.AvailableWorkers / 10.0f;
+                    if (resource == "Zboże")
+                        totalProduction += 10.0f * subsistenceFactor;
+                    else
+                        totalProduction += 1.0f * subsistenceFactor;
                 }
             }
 
+            _globalStats[$"Production {resource}"] = totalProduction;
+
+            // Średnie zapotrzebowanie na zasoby
+            var totalDemand = _populations
+                .Where(population => population.Needs.ContainsKey(resource))
+                .Sum(population => population.Needs[resource] * population.Size);
+
             _globalStats[$"{resource} Demand"] = totalDemand;
+
+            // Średnie zadowolenie z zaspokojenia potrzeb
+            var totalSatisfaction = 0.0f;
+            var populationsWithNeed = 0;
+            foreach (
+                var population in _populations.Where(population => population.Satisfaction.ContainsKey(resource))
+            )
+            {
+                totalSatisfaction += population.Satisfaction[resource];
+                populationsWithNeed++;
+            }
+
+            if (populationsWithNeed > 0)
+            {
+                _globalStats[$"Satisfaction {resource}"] = totalSatisfaction / populationsWithNeed;
+            }
         }
 
+        // Całkowita zamożność
         _globalStats["Total Wealth"] = _populations.Sum(p => p.Wealth);
+
+        // Suma pracowników w budynkach
+        _globalStats["Employed Workers"] = _provinces.Sum(p => p.Buildings.Sum(b => b.CurrentWorkers));
+
+        // Całkowita liczba dostępnych pracowników
+        _globalStats["Available Workers"] = _provinces.Sum(p => p.AvailableWorkers);
     }
 }
