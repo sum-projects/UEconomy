@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace UEconomy;
+namespace UEconomy.Engine;
 
 public class Market
 {
     private Dictionary<string, float> _prices = new();
     private Dictionary<string, List<TradeOffer>> _supplies = new();
     private Dictionary<string, List<TradeOffer>> _demands = new();
+    private Dictionary<string, float> _lastTradedAmount = new();
 
     public void Initialize(IEnumerable<string> resources)
     {
@@ -17,6 +18,7 @@ public class Market
             _prices[resource] = 20.0f;
             _supplies[resource] = new List<TradeOffer>();
             _demands[resource] = new List<TradeOffer>();
+            _lastTradedAmount[resource] = 0;
         }
     }
 
@@ -50,14 +52,32 @@ public class Market
         return _prices.GetValueOrDefault(resource, 0);
     }
 
-    public float GetSupply(string resource)
+    public string[] GetAllResources()
     {
-        return _supplies.TryGetValue(resource, out var supply) ? supply.Sum(offer => offer.Amount) : 0;
+        return _prices.Keys.ToArray();
     }
 
-    public float GetDemand(string resource)
+    public float GetSupplyDemandRatio(string resource)
     {
-        return _demands.TryGetValue(resource, out var demand) ? demand.Sum(offer => offer.Amount) : 0;
+        var supply = _supplies.GetValueOrDefault(resource)?.Count ?? 0;
+        var demand = _demands.GetValueOrDefault(resource)?.Count ?? 0;
+
+        if (demand == 0)
+        {
+            return supply > 0 ? 2.0f : 1.0f;
+        }
+
+        if (supply == 0)
+        {
+            return 0.5f;
+        }
+
+        return (float) supply / demand;
+    }
+
+    public float GetLastTradedAmount(string resource)
+    {
+        return _lastTradedAmount.GetValueOrDefault(resource, 0);
     }
 
     public void ResolveTrades()
@@ -114,6 +134,7 @@ public class Market
             {
                 var newPrice = totalValue / totalTraded;
                 _prices[resource] = _prices[resource] * 0.7f + newPrice * 0.3f;
+                _lastTradedAmount[resource] = totalTraded;
             }
             else
             {

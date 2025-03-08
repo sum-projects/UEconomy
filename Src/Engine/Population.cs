@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace UEconomy;
+namespace UEconomy.Engine;
 
 public class Population
 {

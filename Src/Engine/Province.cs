@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 
-namespace UEconomy;
+namespace UEconomy.Engine;
 
 public class Province
 {
