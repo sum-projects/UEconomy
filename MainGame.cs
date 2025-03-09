@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using UEconomy.Engine;
+using UEconomy.Game;
 
 namespace UEconomy;
 
@@ -9,6 +10,7 @@ public class MainGame : Microsoft.Xna.Framework.Game
 {
     private GameEngine _gameEngine;
     private GraphicsEngine _graphicsEngine;
+    private EventEngine _eventEngine;
 
     public MainGame()
     {
@@ -16,7 +18,10 @@ public class MainGame : Microsoft.Xna.Framework.Game
         IsMouseVisible = true;
 
         _gameEngine = new GameEngine(new Stats());
-        _graphicsEngine = new GraphicsEngine(new GraphicsDeviceManager(this), _gameEngine);
+        _eventEngine = new EventEngine(_gameEngine);
+        _graphicsEngine = new GraphicsEngine(new GraphicsDeviceManager(this), _gameEngine, _eventEngine);
+
+        _eventEngine._graphicsEngine = _graphicsEngine;
     }
 
     protected override void Initialize()
@@ -46,6 +51,7 @@ public class MainGame : Microsoft.Xna.Framework.Game
 
 
         _gameEngine.Update(gameTime);
+        _eventEngine.Update();
         _graphicsEngine.Update(gameTime);
 
         base.Update(gameTime);

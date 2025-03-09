@@ -2,7 +2,7 @@
 using System.Linq;
 using UEconomy.Game;
 
-namespace UEconomy.Engine;
+namespace UEconomy.Game;
 
 public class Stats
 {
