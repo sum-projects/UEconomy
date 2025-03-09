@@ -2,14 +2,14 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using UEconomy.Game;
+using UEconomy.Graphics;
 
 namespace UEconomy.Engine;
 
 public class EventEngine
 {
     private GameEngine _gameEngine;
-    public GraphicsEngine _graphicsEngine { private get; set; }
-
+    private UI _ui;
     public Province SelectedProvince { get; private set; }
     public string SelectedResource { get; private set; } = "Zboże";
     public Building SelectedBuilding { get; private set; }
@@ -18,9 +18,10 @@ public class EventEngine
     private MouseState _previousMouseState;
 
 
-    public EventEngine(GameEngine gameEngine)
+    public EventEngine(GameEngine gameEngine, UI ui)
     {
         _gameEngine = gameEngine;
+        _ui = ui;
     }
 
     public void Update()
@@ -38,21 +39,15 @@ public class EventEngine
 
     private void HandleResourceButtonClick(Point mousePosition)
     {
-        var panelPos = _graphicsEngine.PanelPos();
-        var panelX = panelPos["X"];
-        var panelY = panelPos["Y"];
-        var panelWidth = panelPos["Width"];
-        var panelHeight = panelPos["Height"];
-
         // Sprawdź, czy kliknięcie jest w ogóle w obszarze panelu statystyk
-        Rectangle panelRect = new Rectangle(panelX, panelY, panelWidth, panelHeight);
+        var panelRect = new Rectangle(_ui.PanelX, _ui.PanelY, _ui.PanelWidth, _ui.PanelHeight);
         if (!panelRect.Contains(mousePosition))
         {
             return; // Kliknięcie poza panelem, nie sprawdzaj dalej
         }
 
         // Obliczenie pozycji przycisków zasobów na podstawie faktycznej zawartości panelu
-        int resourceButtonsSectionY = panelY + panelHeight - 55; // Przyciski są około 200px od dołu panelu
+        var resourceButtonsSectionY = _ui.PanelY + _ui.PanelHeight - 55; // Przyciski są około 200px od dołu panelu
 
         // Sprawdź, czy kliknięcie jest w obszarze przycisków zasobów
         if (mousePosition.Y < resourceButtonsSectionY || mousePosition.Y > resourceButtonsSectionY + 60)
@@ -60,23 +55,22 @@ public class EventEngine
             return; // Kliknięcie nie jest w obszarze przycisków
         }
 
-        int chartMargin = 15;
-        int buttonSize = (panelWidth - chartMargin * 2 - 10) / 3; // 3 przyciski w rzędzie, 5px odstępu
-        int buttonSpacing = 5;
+        var buttonSize = (_ui.PanelWidth - _ui.ChartMargin * 2 - 10) / 3; // 3 przyciski w rzędzie, 5px odstępu
+        const int buttonSpacing = 5;
 
-        int row = (mousePosition.Y - resourceButtonsSectionY) / 30; // Przyciski mają 25px wysokości + 5px odstępu
-        int col = (mousePosition.X - (panelX + chartMargin)) / (buttonSize + buttonSpacing);
+        var row = (mousePosition.Y - resourceButtonsSectionY) / 30; // Przyciski mają 25px wysokości + 5px odstępu
+        var col = (mousePosition.X - (_ui.PanelX + _ui.ChartMargin)) / (buttonSize + buttonSpacing);
 
         // Ograniczenie do prawidłowych zakresów
         row = Math.Max(0, Math.Min(1, row)); // Maksymalnie 2 rzędy
         col = Math.Max(0, Math.Min(2, col)); // Maksymalnie 3 kolumny
 
         // Oblicz indeks zasobu
-        int resourceIndex = row * 3 + col;
-        string[] resources = _gameEngine._market.GetAllResources();
+        var resourceIndex = row * 3 + col;
+        var resources = _gameEngine._market.GetAllResources();
 
         // Upewnij się, że indeks jest w zakresie
-        if (resourceIndex >= 0 && resourceIndex < resources.Length)
+        if (resourceIndex < resources.Length)
         {
             SelectedResource = resources[resourceIndex];
         }
@@ -94,11 +88,11 @@ public class EventEngine
         // Sprawdź kliknięcie na siatkę prowincji
         foreach (var province in _gameEngine._provinces)
         {
-            Rectangle provinceRect = new Rectangle(
-                (int)province.Position.X + _graphicsEngine.GridMarginX,
-                (int)province.Position.Y + _graphicsEngine.GridMarginY,
-                _graphicsEngine.CellSize - 2,
-                _graphicsEngine.CellSize - 2
+            var provinceRect = new Rectangle(
+                (int)province.Position.X + _ui.GridMarginX,
+                (int)province.Position.Y + _ui.GridMarginY,
+                _ui.CellSize - 2,
+                _ui.CellSize - 2
             );
 
             if (provinceRect.Contains(mousePosition))
@@ -111,18 +105,10 @@ public class EventEngine
         // Jeśli wybrano prowincję, sprawdź kliknięcia na szczegóły
         if (SelectedProvince != null)
         {
-            // Pozycja i rozmiar panelu szczegółów prowincji
-            int screenWidth = _graphicsEngine.ScreenWidth;
-            int screenHeight = _graphicsEngine.ScreenHeight;
-            int panelWidth = (int)(screenWidth * 0.35f);
-            int panelHeight = (int)(screenHeight * 0.7f);
-            int panelX = (screenWidth - panelWidth) / 2;
-            int panelY = (screenHeight - panelHeight) / 2;
-
             // Sprawdź kliknięcie przycisku zamknięcia
-            Rectangle closeButtonRect = new Rectangle(
-                panelX + panelWidth - 40,
-                panelY + 5,
+            var closeButtonRect = new Rectangle(
+                _ui.PanelX + _ui.PanelWidth - 40,
+                _ui.PanelY + 5,
                 30,
                 30
             );
@@ -133,33 +119,33 @@ public class EventEngine
                 return;
             }
 
-            int margin = 20;
+            const int margin = 20;
 
             // Sprawdź kliknięcia na budynki
             if (SelectedBuildingIndex >= 0 && SelectedBuildingIndex < SelectedProvince.Buildings.Count)
             {
-                int buildingsContainerX = panelX + margin + 10;
-                int buildingsContainerY = panelY + 250; // Przybliżona pozycja sekcji budynków
-                int buildingsContainerWidth = panelWidth - margin * 2 - 20;
+                var buildingsContainerX = _ui.PanelX + margin + 10;
+                var buildingsContainerY = _ui.PanelY + 250; // Przybliżona pozycja sekcji budynków
+                var buildingsContainerWidth = _ui.PanelWidth - margin * 2 - 20;
 
-                for (int i = 0; i < SelectedProvince.Buildings.Count; i++)
+                for (var i = 0; i < SelectedProvince.Buildings.Count; i++)
                 {
-                    int buildingY = buildingsContainerY + 5 + i * (int)(30 * _graphicsEngine.FontScale);
+                    var buildingY = buildingsContainerY + 5 + i * (int)(30 * _ui.FontScale);
 
                     // Przycisk wyboru budynku
-                    Rectangle buildingRect = new Rectangle(
+                    var buildingRect = new Rectangle(
                         buildingsContainerX,
                         buildingY,
                         buildingsContainerWidth - 30,
-                        (int)(25 * _graphicsEngine.FontScale)
+                        (int)(25 * _ui.FontScale)
                     );
 
                     // Przycisk ulepszenia budynku
-                    Rectangle upgradeButtonRect = new Rectangle(
+                    var upgradeButtonRect = new Rectangle(
                         buildingsContainerX + buildingsContainerWidth - 25,
                         buildingY + 2,
-                        (int)(20 * _graphicsEngine.FontScale),
-                        (int)(20 * _graphicsEngine.FontScale)
+                        (int)(20 * _ui.FontScale),
+                        (int)(20 * _ui.FontScale)
                     );
 
                     if (buildingRect.Contains(mousePosition))
@@ -183,27 +169,27 @@ public class EventEngine
             // Sprawdź kliknięcia na przyciski budowy
             string[] buildingTypes =
                 { "FieldCrop", "Sawmill", "IronMine", "CoalMine", "FurnitureFactory", "TailorShop" };
-            int buildButtonsY = panelY + panelHeight - 150; // Przybliżona pozycja sekcji przycisków budowy
-            int buttonWidth = (panelWidth - margin * 2 - 40) / 3;
-            int buttonHeight = (int)(35 * _graphicsEngine.FontScale);
-            int buttonSpacing = 10;
+            var buildButtonsY = _ui.PanelY + _ui.PanelHeight - 150; // Przybliżona pozycja sekcji przycisków budowy
+            var buttonWidth = (_ui.PanelWidth - margin * 2 - 40) / 3;
+            var buttonHeight = (int)(35 * _ui.FontScale);
+            const int buttonSpacing = 10;
 
-            for (int i = 0; i < buildingTypes.Length; i++)
+            for (var i = 0; i < buildingTypes.Length; i++)
             {
-                int row = i / 3;
-                int col = i % 3;
+                var row = i / 3;
+                var col = i % 3;
 
-                int buttonX = panelX + margin + 10 + col * (buttonWidth + buttonSpacing);
-                int buttonY = buildButtonsY + row * (buttonHeight + buttonSpacing);
+                var buttonX = _ui.PanelX + margin + 10 + col * (buttonWidth + buttonSpacing);
+                var buttonY = buildButtonsY + row * (buttonHeight + buttonSpacing);
 
-                Rectangle buttonRect = new Rectangle(buttonX, buttonY, buttonWidth, buttonHeight);
+                var buttonRect = new Rectangle(buttonX, buttonY, buttonWidth, buttonHeight);
 
                 if (buttonRect.Contains(mousePosition))
                 {
-                    int buildCost = 500;
+                    const int buildCost = 500;
                     var population = _gameEngine._populations.Find(p => p.ProvinceId == SelectedProvince.Id);
 
-                    if (population != null && population.Wealth >= buildCost)
+                    if (population is { Wealth: >= buildCost })
                     {
                         population.Wealth -= buildCost;
                         SelectedProvince.AddBuilding(buildingTypes[i]);
@@ -214,17 +200,12 @@ public class EventEngine
             // Sprawdź kliknięcie na przycisk ulepszenia w panelu szczegółów budynku
             if (SelectedBuilding != null)
             {
-                int detailsPanelX = panelX + panelWidth + 10;
-                int detailsPanelY = panelY;
-                int detailsPanelWidth = 250;
-                int detailsPanelMargin = 15;
-
                 // Przycisk ulepszenia w panelu szczegółów
-                Rectangle upgradeButtonRect = new Rectangle(
-                    detailsPanelX + detailsPanelMargin,
-                    detailsPanelY + 300, // Przybliżona pozycja przycisku
-                    detailsPanelWidth - detailsPanelMargin * 2,
-                    (int)(35 * _graphicsEngine.FontScale)
+                var upgradeButtonRect = new Rectangle(
+                    _ui.DetailsPanelX + _ui.DetailsPanelMargin,
+                    _ui.DetailsPanelY + 300, // Przybliżona pozycja przycisku
+                    _ui.DetailsPanelWidth - _ui.DetailsPanelMargin * 2,
+                    (int)(35 * _ui.FontScale)
                 );
 
                 if (upgradeButtonRect.Contains(mousePosition))

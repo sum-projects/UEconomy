@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using UEconomy.Engine;
 using UEconomy.Game;
+using UEconomy.Graphics;
 
 namespace UEconomy;
 
@@ -11,22 +12,36 @@ public class MainGame : Microsoft.Xna.Framework.Game
     private GameEngine _gameEngine;
     private GraphicsEngine _graphicsEngine;
     private EventEngine _eventEngine;
+    private UI _ui;
+    private GraphicsDeviceManager _graphicsDeviceManager;
 
     public MainGame()
     {
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
 
-        _gameEngine = new GameEngine(new Stats());
-        _eventEngine = new EventEngine(_gameEngine);
-        _graphicsEngine = new GraphicsEngine(new GraphicsDeviceManager(this), _gameEngine, _eventEngine);
+        _graphicsDeviceManager = new GraphicsDeviceManager(this);
 
-        _eventEngine._graphicsEngine = _graphicsEngine;
+        // _graphics.IsFullScreen = true;
+        // _graphics.PreferredBackBufferWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
+        // _graphics.PreferredBackBufferHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
+
+        _graphicsDeviceManager.IsFullScreen = false;
+        _graphicsDeviceManager.PreferredBackBufferWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width - 100;
+        _graphicsDeviceManager.PreferredBackBufferHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height - 100;
+
+        _gameEngine = new GameEngine(new Stats());
+
+        _ui = new UI();
+        _eventEngine = new EventEngine(_gameEngine, _ui);
+        _graphicsEngine = new GraphicsEngine(_gameEngine, _eventEngine, _ui);
     }
 
     protected override void Initialize()
     {
-        _gameEngine.Initialize(_graphicsEngine.CellSize, _graphicsEngine.GridWidth, _graphicsEngine.GridHeight);
+        _ui.Initialize(GraphicsDevice);
+
+        _gameEngine.Initialize(_ui.CellSize, _ui.GridWidth, _ui.GridHeight);
         _graphicsEngine.Initialize();
 
         base.Initialize();
@@ -34,7 +49,7 @@ public class MainGame : Microsoft.Xna.Framework.Game
 
     protected override void LoadContent()
     {
-        _graphicsEngine.LoadContent(Content.Load<SpriteFont>("Arial"));
+        _graphicsEngine.LoadContent(Content.Load<SpriteFont>("Arial"), GraphicsDevice);
 
         base.LoadContent();
     }

@@ -5,22 +5,12 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using UEconomy.Game;
+using UEconomy.Graphics;
 
 namespace UEconomy.Engine;
 
 public class GraphicsEngine
 {
-    public int GridWidth { get; private set; } = 8;
-    public int GridHeight { get; private set; } = 6;
-    public int CellSize { get; private set; } = 80;
-
-    public int GridMarginX { get; private set; }
-    public int GridMarginY { get; private set; }
-
-    public int ScreenWidth { get; private set; }
-    public int ScreenHeight { get; private set; }
-
-    private GraphicsDeviceManager _graphics;
     private Texture2D _uiBackground;
     private Texture2D _provinceTexture;
     private Texture2D _backgroundTexture;
@@ -29,8 +19,6 @@ public class GraphicsEngine
     private SpriteFont _font;
 
     private EventEngine _eventEngine;
-    public float FontScale { get; private set; } = 1.0f;
-
 
     private float _totalGameTime = 0;
 
@@ -38,28 +26,18 @@ public class GraphicsEngine
     private Rectangle[] _resourceButtonRects = new Rectangle[6]; // Zakładając, że mamy 6 zasobów
 
     private readonly GameEngine _gameEngine;
+    private readonly UI _ui;
 
-    public GraphicsEngine(GraphicsDeviceManager graphics, GameEngine gameEngine, EventEngine eventEngine)
+    public GraphicsEngine(GameEngine gameEngine, EventEngine eventEngine, UI ui)
     {
         _gameEngine = gameEngine;
         _eventEngine = eventEngine;
-
-        _graphics = graphics;
-        // _graphics.IsFullScreen = true;
-        // _graphics.PreferredBackBufferWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width;
-        // _graphics.PreferredBackBufferHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height;
-
-        _graphics.IsFullScreen = false;
-        _graphics.PreferredBackBufferWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width - 100;
-        _graphics.PreferredBackBufferHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height - 100;
-
-        CalculateUIScaling();
+        _ui = ui;
     }
 
     public void Initialize()
     {
-        ScreenWidth = _graphics.GraphicsDevice.Viewport.Width;
-        ScreenHeight = _graphics.GraphicsDevice.Viewport.Height;
+
     }
 
     public void Draw(GameTime gameTime)
@@ -69,7 +47,7 @@ public class GraphicsEngine
         // Rysuj tło dla całej planszy
         _spriteBatch.Draw(
             _backgroundTexture,
-            new Rectangle(0, 0, ScreenWidth, ScreenHeight),
+            new Rectangle(0, 0, _ui.ScreenWidth, _ui.ScreenHeight),
             new Color(30, 35, 45)
         );
 
@@ -77,10 +55,10 @@ public class GraphicsEngine
         _spriteBatch.Draw(
             _uiBackground,
             new Rectangle(
-                GridMarginX,
-                GridMarginY,
-                GridWidth * CellSize,
-                GridHeight * CellSize
+                _ui.GridMarginX,
+                _ui.GridMarginY,
+                _ui.GridWidth * _ui.CellSize,
+                _ui.GridHeight * _ui.CellSize
             ),
             new Color(50, 55, 65, 220)
         );
@@ -89,19 +67,19 @@ public class GraphicsEngine
         foreach (var province in _gameEngine._provinces)
         {
             // Oblicz pozycję prowincji na ekranie z uwzględnieniem marginesów
-            var cellX = (int)province.Position.X + GridMarginX;
-            var cellY = (int)province.Position.Y + GridMarginY;
+            var cellX = (int)province.Position.X + _ui.GridMarginX;
+            var cellY = (int)province.Position.Y + _ui.GridMarginY;
 
             // Oblicz kolor prowincji na podstawie jej zasobów i typu
             Color provinceColor = CalculateProvinceColor(province);
 
             // Dodaj efekt gradientu do komórek
-            DrawGradientCell(cellX, cellY, CellSize - 2, CellSize - 2, provinceColor);
+            DrawGradientCell(cellX, cellY, _ui.CellSize - 2, _ui.CellSize - 2, provinceColor);
 
             // Jeśli prowincja jest wybrana, dodaj efektowne obramowanie
             if (_eventEngine.SelectedProvince != null && _eventEngine.SelectedProvince.Id == province.Id)
             {
-                DrawSelectedBorder(cellX, cellY, CellSize, CellSize);
+                DrawSelectedBorder(cellX, cellY, _ui.CellSize, _ui.CellSize);
             }
 
             // Rysuj informacje o prowincji
@@ -119,7 +97,7 @@ public class GraphicsEngine
                     Color.White,
                     0f,
                     Vector2.Zero,
-                    FontScale * 0.8f,
+                    _ui.FontScale * 0.8f,
                     SpriteEffects.None,
                     0f
                 );
@@ -138,18 +116,18 @@ public class GraphicsEngine
         _spriteBatch.End();
     }
 
-    public void LoadContent(SpriteFont font)
+    public void LoadContent(SpriteFont font, GraphicsDevice graphics)
     {
-        _spriteBatch = new SpriteBatch(_graphics.GraphicsDevice);
+        _spriteBatch = new SpriteBatch(graphics);
 
         // Stwórz podstawowe tekstury
-        _provinceTexture = new Texture2D(_graphics.GraphicsDevice, 1, 1);
+        _provinceTexture = new Texture2D(graphics, 1, 1);
         _provinceTexture.SetData(new[] { Color.White });
 
-        _uiBackground = new Texture2D(_graphics.GraphicsDevice, 1, 1);
+        _uiBackground = new Texture2D(graphics, 1, 1);
         _uiBackground.SetData(new[] { Color.Black });
 
-        _backgroundTexture = new Texture2D(_graphics.GraphicsDevice, 1, 1);
+        _backgroundTexture = new Texture2D(graphics, 1, 1);
         _backgroundTexture.SetData(new[] { Color.White });
 
         // Załaduj czcionkę
@@ -160,31 +138,6 @@ public class GraphicsEngine
     {
         // Aktualizuj całkowity czas gry (do animacji)
         _totalGameTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
-    }
-
-
-    private void CalculateUIScaling()
-    {
-        // Pobierz rozmiar ekranu
-        int screenWidth = _graphics.PreferredBackBufferWidth;
-        int screenHeight = _graphics.PreferredBackBufferHeight;
-
-        // Oblicz liczbę prowincji w poziomie i pionie dla wypełnienia ekranu
-        // Pozostawiamy miejsce na panel po prawej stronie
-        int panelWidth = (int)(screenWidth * 0.25f); // 25% szerokości ekranu na panel statystyk
-        int availableWidth = screenWidth - panelWidth;
-
-        // Oblicz optymalny rozmiar komórki i liczbę komórek
-        CellSize = Math.Min(availableWidth / 10, screenHeight / 8); // Maksymalnie 10x8 prowincji
-        GridWidth = availableWidth / CellSize;
-        GridHeight = screenHeight / CellSize;
-
-        // Ustaw marginesy, aby siatka była wycentrowana
-        GridMarginX = (availableWidth - (GridWidth * CellSize)) / 2;
-        GridMarginY = (screenHeight - (GridHeight * CellSize)) / 2;
-
-        // Skaluj rozmiar czcionki w zależności od rozdzielczości
-        FontScale = screenHeight / 1080f; // 1.0 dla 1080p, proporcjonalnie dla innych rozdzielczości
     }
 
     private Color CalculateProvinceColor(Province province)
@@ -361,9 +314,9 @@ public class GraphicsEngine
 
     private void DrawProvinceIcons(Province province, int cellX, int cellY)
     {
-        var iconSize = CellSize / 10;
+        var iconSize = _ui.CellSize / 10;
         var margin = 2;
-        var iconX = cellX + CellSize - iconSize - margin;
+        var iconX = cellX + _ui.CellSize - iconSize - margin;
         var iconY = cellY + margin;
 
         // Słownik kolorów dla różnych typów budynków
@@ -420,7 +373,7 @@ public class GraphicsEngine
 
     private void DrawHeaderBar(int x, int y, int width, string title, Color textColor)
     {
-        int headerHeight = (int)(30 * FontScale);
+        int headerHeight = (int)(30 * _ui.FontScale);
 
         // Tło nagłówka
         _spriteBatch.Draw(
@@ -437,7 +390,7 @@ public class GraphicsEngine
             textColor,
             0f,
             new Vector2(_font.MeasureString(title).X / 2, _font.MeasureString(title).Y / 2),
-            FontScale * 1.2f,
+            _ui.FontScale * 1.2f,
             SpriteEffects.None,
             0f
         );
@@ -445,10 +398,10 @@ public class GraphicsEngine
 
     private void DrawProvinceDetailsPanel()
     {
-        int panelWidth = (int)(ScreenWidth * 0.35f);
-        int panelHeight = (int)(ScreenHeight * 0.7f);
-        int panelX = (ScreenWidth - panelWidth) / 2;
-        int panelY = (ScreenHeight - panelHeight) / 2;
+        int panelWidth = (int)(_ui.ScreenWidth * 0.35f);
+        int panelHeight = (int)(_ui.ScreenHeight * 0.7f);
+        int panelX = (_ui.ScreenWidth - panelWidth) / 2;
+        int panelY = (_ui.ScreenHeight - panelHeight) / 2;
 
         // Tło panelu z efektem gradientu
         Color topColor = new Color(20, 20, 40, 230);
@@ -491,11 +444,11 @@ public class GraphicsEngine
                 Color.White,
                 0f,
                 Vector2.Zero,
-                FontScale * 1.1f,
+                _ui.FontScale * 1.1f,
                 SpriteEffects.None,
                 0f
             );
-            yPos += (int)(25 * FontScale);
+            yPos += (int)(25 * _ui.FontScale);
 
             // Zamożność
             _spriteBatch.DrawString(
@@ -505,11 +458,11 @@ public class GraphicsEngine
                 Color.White,
                 0f,
                 Vector2.Zero,
-                FontScale * 1.1f,
+                _ui.FontScale * 1.1f,
                 SpriteEffects.None,
                 0f
             );
-            yPos += (int)(25 * FontScale);
+            yPos += (int)(25 * _ui.FontScale);
 
             // Dostępni pracownicy
             _spriteBatch.DrawString(
@@ -519,11 +472,11 @@ public class GraphicsEngine
                 Color.White,
                 0f,
                 Vector2.Zero,
-                FontScale * 1.1f,
+                _ui.FontScale * 1.1f,
                 SpriteEffects.None,
                 0f
             );
-            yPos += (int)(25 * FontScale);
+            yPos += (int)(25 * _ui.FontScale);
         });
 
         // Sekcja zasobów
@@ -534,7 +487,7 @@ public class GraphicsEngine
             {
                 // Tło paska
                 int barWidth = panelWidth - sectionMargin * 2 - 20;
-                int barHeight = (int)(20 * FontScale);
+                int barHeight = (int)(20 * _ui.FontScale);
 
                 _spriteBatch.Draw(
                     _provinceTexture,
@@ -562,14 +515,14 @@ public class GraphicsEngine
                     Color.White,
                     0f,
                     Vector2.Zero,
-                    FontScale,
+                    _ui.FontScale,
                     SpriteEffects.None,
                     0f
                 );
 
                 // Tekst ilości zasobu
                 string resourceAmount = $"{resource.Value:F1}";
-                Vector2 textSize = _font.MeasureString(resourceAmount) * FontScale;
+                Vector2 textSize = _font.MeasureString(resourceAmount) * _ui.FontScale;
 
                 _spriteBatch.DrawString(
                     _font,
@@ -578,7 +531,7 @@ public class GraphicsEngine
                     Color.White,
                     0f,
                     Vector2.Zero,
-                    FontScale,
+                    _ui.FontScale,
                     SpriteEffects.None,
                     0f
                 );
@@ -596,7 +549,7 @@ public class GraphicsEngine
                 {
                     // Pasek potrzeby
                     int barWidth = panelWidth - sectionMargin * 2 - 20;
-                    int barHeight = (int)(16 * FontScale);
+                    int barHeight = (int)(16 * _ui.FontScale);
 
                     // Tło paska
                     _spriteBatch.Draw(
@@ -630,7 +583,7 @@ public class GraphicsEngine
                         Color.White,
                         0f,
                         Vector2.Zero,
-                        FontScale,
+                        _ui.FontScale,
                         SpriteEffects.None,
                         0f
                     );
@@ -639,7 +592,7 @@ public class GraphicsEngine
                 }
 
                 // Całkowite zapotrzebowanie
-                yPos += (int)(10 * FontScale);
+                yPos += (int)(10 * _ui.FontScale);
 
                 _spriteBatch.DrawString(
                     _font,
@@ -648,12 +601,12 @@ public class GraphicsEngine
                     Color.White,
                     0f,
                     Vector2.Zero,
-                    FontScale,
+                    _ui.FontScale,
                     SpriteEffects.None,
                     0f
                 );
 
-                yPos += (int)(20 * FontScale);
+                yPos += (int)(20 * _ui.FontScale);
 
                 foreach (var need in population.Needs)
                 {
@@ -665,11 +618,11 @@ public class GraphicsEngine
                         Color.White,
                         0f,
                         Vector2.Zero,
-                        FontScale,
+                        _ui.FontScale,
                         SpriteEffects.None,
                         0f
                     );
-                    yPos += (int)(20 * FontScale);
+                    yPos += (int)(20 * _ui.FontScale);
                 }
             });
         }
@@ -685,7 +638,7 @@ public class GraphicsEngine
             int buildingsContainerY = yPos;
             int buildingsContainerWidth = panelWidth - sectionMargin * 2 - 20;
             int buildingsContainerHeight =
-                (int)(Math.Min(6, _eventEngine.SelectedProvince.Buildings.Count) * (30 * FontScale) + 10);
+                (int)(Math.Min(6, _eventEngine.SelectedProvince.Buildings.Count) * (30 * _ui.FontScale) + 10);
 
             // Tło kontenera
             _spriteBatch.Draw(
@@ -712,7 +665,7 @@ public class GraphicsEngine
                     _spriteBatch.Draw(
                         _provinceTexture,
                         new Rectangle(buildingsContainerX + 2, buildingY, buildingsContainerWidth - 4,
-                            (int)(25 * FontScale)),
+                            (int)(25 * _ui.FontScale)),
                         new Color(80, 80, 120)
                     );
 
@@ -720,24 +673,24 @@ public class GraphicsEngine
                 }
 
                 // Ikona typu budynku
-                DrawBuildingIcon(buildingsContainerX + 5, buildingY + 2, (int)(20 * FontScale), building.Type);
+                DrawBuildingIcon(buildingsContainerX + 5, buildingY + 2, (int)(20 * _ui.FontScale), building.Type);
 
                 // Nazwa budynku i poziom
                 _spriteBatch.DrawString(
                     _font,
                     $"{building.Name} (Lv.{building.Level})",
-                    new Vector2(buildingsContainerX + (int)(30 * FontScale), buildingY + 2),
+                    new Vector2(buildingsContainerX + (int)(30 * _ui.FontScale), buildingY + 2),
                     buildingColor,
                     0f,
                     Vector2.Zero,
-                    FontScale,
+                    _ui.FontScale,
                     SpriteEffects.None,
                     0f
                 );
 
                 // Informacja o pracownikach
                 string workersInfo = $"{building.CurrentWorkers}/{building.WorkersCapacity}";
-                Vector2 workersSize = _font.MeasureString(workersInfo) * FontScale;
+                Vector2 workersSize = _font.MeasureString(workersInfo) * _ui.FontScale;
 
                 _spriteBatch.DrawString(
                     _font,
@@ -746,7 +699,7 @@ public class GraphicsEngine
                     buildingColor,
                     0f,
                     Vector2.Zero,
-                    FontScale,
+                    _ui.FontScale,
                     SpriteEffects.None,
                     0f
                 );
@@ -755,8 +708,8 @@ public class GraphicsEngine
                 DrawUpgradeButton(
                     buildingsContainerX + buildingsContainerWidth - 25,
                     buildingY + 2,
-                    (int)(20 * FontScale),
-                    (int)(20 * FontScale),
+                    (int)(20 * _ui.FontScale),
+                    (int)(20 * _ui.FontScale),
                     building,
                     population
                 );
@@ -766,7 +719,7 @@ public class GraphicsEngine
                     buildingsContainerX,
                     buildingY,
                     buildingsContainerWidth - 30,
-                    (int)(25 * FontScale)
+                    (int)(25 * _ui.FontScale)
                 );
 
                 if (buildingRect.Contains(Mouse.GetState().Position))
@@ -774,7 +727,7 @@ public class GraphicsEngine
                     _eventEngine.SelectedBuildingIndex = i;
                 }
 
-                buildingY += (int)(30 * FontScale);
+                buildingY += (int)(30 * _ui.FontScale);
             }
 
             yPos += buildingsContainerHeight + 10;
@@ -861,12 +814,12 @@ public class GraphicsEngine
             Color.White,
             0f,
             Vector2.Zero,
-            FontScale,
+            _ui.FontScale,
             SpriteEffects.None,
             0f
         );
 
-        yPos += (int)(25 * FontScale);
+        yPos += (int)(25 * _ui.FontScale);
 
         // Definicje typów budynków
         string[] buildingTypes = { "FieldCrop", "Sawmill", "IronMine", "CoalMine", "FurnitureFactory", "TailorShop" };
@@ -874,7 +827,7 @@ public class GraphicsEngine
 
         // Układamy przyciski w 2 rzędy po 3
         int buttonWidth = (panelWidth - margin * 2 - 40) / 3;
-        int buttonHeight = (int)(35 * FontScale);
+        int buttonHeight = (int)(35 * _ui.FontScale);
         int buttonSpacing = 10;
 
         for (int i = 0; i < buildingTypes.Length; i++)
@@ -919,7 +872,7 @@ public class GraphicsEngine
                 canAfford ? Color.White : new Color(150, 150, 150),
                 0f,
                 Vector2.Zero,
-                FontScale * 0.9f,
+                _ui.FontScale * 0.9f,
                 SpriteEffects.None,
                 0f
             );
@@ -932,7 +885,7 @@ public class GraphicsEngine
                 canAfford ? new Color(200, 255, 200) : new Color(150, 150, 150),
                 0f,
                 Vector2.Zero,
-                FontScale * 0.8f,
+                _ui.FontScale * 0.8f,
                 SpriteEffects.None,
                 0f
             );
@@ -1094,11 +1047,11 @@ public class GraphicsEngine
             Color.White,
             0f,
             Vector2.Zero,
-            FontScale,
+            _ui.FontScale,
             SpriteEffects.None,
             0f
         );
-        yPos += (int)(25 * FontScale);
+        yPos += (int)(25 * _ui.FontScale);
 
         // Informacja o pracownikach
         _spriteBatch.DrawString(
@@ -1108,11 +1061,11 @@ public class GraphicsEngine
             Color.White,
             0f,
             Vector2.Zero,
-            FontScale,
+            _ui.FontScale,
             SpriteEffects.None,
             0f
         );
-        yPos += (int)(25 * FontScale);
+        yPos += (int)(25 * _ui.FontScale);
 
         // Status
         _spriteBatch.DrawString(
@@ -1122,11 +1075,11 @@ public class GraphicsEngine
             _eventEngine.SelectedBuilding.IsActive ? new Color(100, 255, 100) : new Color(255, 100, 100),
             0f,
             Vector2.Zero,
-            FontScale,
+            _ui.FontScale,
             SpriteEffects.None,
             0f
         );
-        yPos += (int)(30 * FontScale);
+        yPos += (int)(30 * _ui.FontScale);
 
         // Produkcja
         _spriteBatch.DrawString(
@@ -1136,11 +1089,11 @@ public class GraphicsEngine
             Color.White,
             0f,
             Vector2.Zero,
-            FontScale,
+            _ui.FontScale,
             SpriteEffects.None,
             0f
         );
-        yPos += (int)(20 * FontScale);
+        yPos += (int)(20 * _ui.FontScale);
 
         foreach (var resource in _eventEngine.SelectedBuilding.ProductionRates)
         {
@@ -1150,7 +1103,7 @@ public class GraphicsEngine
 
             // Pasek produkcji
             int barWidth = panelWidth - margin * 2 - 10;
-            int barHeight = (int)(15 * FontScale);
+            int barHeight = (int)(15 * _ui.FontScale);
 
             // Tło paska
             _spriteBatch.Draw(
@@ -1177,7 +1130,7 @@ public class GraphicsEngine
                 Color.White,
                 0f,
                 Vector2.Zero,
-                FontScale,
+                _ui.FontScale,
                 SpriteEffects.None,
                 0f
             );
@@ -1188,7 +1141,7 @@ public class GraphicsEngine
         // Zużycie
         if (_eventEngine.SelectedBuilding.ConsumptionRates.Count > 0)
         {
-            yPos += (int)(10 * FontScale);
+            yPos += (int)(10 * _ui.FontScale);
 
             _spriteBatch.DrawString(
                 _font,
@@ -1197,11 +1150,11 @@ public class GraphicsEngine
                 Color.White,
                 0f,
                 Vector2.Zero,
-                FontScale,
+                _ui.FontScale,
                 SpriteEffects.None,
                 0f
             );
-            yPos += (int)(20 * FontScale);
+            yPos += (int)(20 * _ui.FontScale);
 
             foreach (var resource in _eventEngine.SelectedBuilding.ConsumptionRates)
             {
@@ -1211,7 +1164,7 @@ public class GraphicsEngine
 
                 // Pasek zużycia
                 int barWidth = panelWidth - margin * 2 - 10;
-                int barHeight = (int)(15 * FontScale);
+                int barHeight = (int)(15 * _ui.FontScale);
 
                 // Tło paska
                 _spriteBatch.Draw(
@@ -1238,7 +1191,7 @@ public class GraphicsEngine
                     Color.White,
                     0f,
                     Vector2.Zero,
-                    FontScale,
+                    _ui.FontScale,
                     SpriteEffects.None,
                     0f
                 );
@@ -1248,7 +1201,7 @@ public class GraphicsEngine
         }
 
         // Koszt ulepszenia
-        yPos += (int)(20 * FontScale);
+        yPos += (int)(20 * _ui.FontScale);
 
         _spriteBatch.DrawString(
             _font,
@@ -1257,20 +1210,20 @@ public class GraphicsEngine
             Color.White,
             0f,
             Vector2.Zero,
-            FontScale,
+            _ui.FontScale,
             SpriteEffects.None,
             0f
         );
 
         // Przycisk ulepszenia
-        yPos += (int)(30 * FontScale);
+        yPos += (int)(30 * _ui.FontScale);
 
         // Sprawdź, czy gracz może sobie pozwolić na ulepszenie
         bool canAfford = population != null && population.Wealth >= _eventEngine.SelectedBuilding.UpgradeCost;
 
         // Rysuj przycisk
         int buttonWidth = panelWidth - margin * 2;
-        int buttonHeight = (int)(35 * FontScale);
+        int buttonHeight = (int)(35 * _ui.FontScale);
 
         // Sprawdź, czy kursor jest nad przyciskiem
         Rectangle upgradeButtonRect = new Rectangle(x + margin, yPos, buttonWidth, buttonHeight);
@@ -1294,8 +1247,8 @@ public class GraphicsEngine
             new Vector2(x + margin + buttonWidth / 2, yPos + buttonHeight / 2),
             canAfford ? Color.White : new Color(150, 150, 150),
             0f,
-            _font.MeasureString("Ulepsz budynek") * FontScale / 2,
-            FontScale,
+            _font.MeasureString("Ulepsz budynek") * _ui.FontScale / 2,
+            _ui.FontScale,
             SpriteEffects.None,
             0f
         );
@@ -1345,7 +1298,7 @@ public class GraphicsEngine
                 new Color(150, 150, 150),
                 0f,
                 Vector2.Zero,
-                FontScale * 0.7f,
+                _ui.FontScale * 0.7f,
                 SpriteEffects.None,
                 0f
             );
@@ -1379,7 +1332,7 @@ public class GraphicsEngine
             Color.White,
             0f,
             new Vector2(_font.MeasureString($"Trend ceny: {resource}").X / 2, 0),
-            FontScale * 0.8f,
+            _ui.FontScale * 0.8f,
             SpriteEffects.None,
             0f
         );
@@ -1392,7 +1345,7 @@ public class GraphicsEngine
             GetResourceColor(resource),
             0f,
             new Vector2(_font.MeasureString($"Obecna: {_gameEngine._market.GetPrice(resource):F2}$").X, 0),
-            FontScale * 0.8f,
+            _ui.FontScale * 0.8f,
             SpriteEffects.None,
             0f
         );
@@ -1420,10 +1373,10 @@ public class GraphicsEngine
     private void DrawGlobalStatsPanel()
     {
         // Oblicz pozycję i rozmiar panelu
-        int panelX = GridMarginX + GridWidth * CellSize + 20;
-        int panelY = GridMarginY;
-        int panelWidth = (int)(ScreenWidth * 0.24f); // ~24% szerokości ekranu
-        int panelHeight = GridHeight * CellSize;
+        int panelX = _ui.GridMarginX + _ui.GridWidth * _ui.CellSize + 20;
+        int panelY = _ui.GridMarginY;
+        int panelWidth = (int)(_ui.ScreenWidth * 0.24f); // ~24% szerokości ekranu
+        int panelHeight = _ui.GridHeight * _ui.CellSize;
 
         // Tło panelu z gradientem
         Color topColor = new Color(20, 25, 40, 230);
@@ -1471,11 +1424,11 @@ public class GraphicsEngine
                     priceColor,
                     0f,
                     Vector2.Zero,
-                    FontScale,
+                    _ui.FontScale,
                     SpriteEffects.None,
                     0f
                 );
-                yPos += (int)(22 * FontScale);
+                yPos += (int)(22 * _ui.FontScale);
             }
         });
 
@@ -1489,11 +1442,11 @@ public class GraphicsEngine
                 Color.White,
                 0f,
                 Vector2.Zero,
-                FontScale * 1.2f, // Większa czcionka dla ważnej statystyki
+                _ui.FontScale * 1.2f, // Większa czcionka dla ważnej statystyki
                 SpriteEffects.None,
                 0f
             );
-            yPos += (int)(30 * FontScale);
+            yPos += (int)(30 * _ui.FontScale);
         });
 
         // Sekcja całkowitych zasobów
@@ -1512,11 +1465,11 @@ public class GraphicsEngine
                     new Color(brightness, brightness, brightness),
                     0f,
                     Vector2.Zero,
-                    FontScale,
+                    _ui.FontScale,
                     SpriteEffects.None,
                     0f
                 );
-                yPos += (int)(22 * FontScale);
+                yPos += (int)(22 * _ui.FontScale);
             }
         });
 
@@ -1538,11 +1491,11 @@ public class GraphicsEngine
                     productionColor,
                     0f,
                     Vector2.Zero,
-                    FontScale,
+                    _ui.FontScale,
                     SpriteEffects.None,
                     0f
                 );
-                yPos += (int)(22 * FontScale);
+                yPos += (int)(22 * _ui.FontScale);
             }
         });
 
@@ -1564,11 +1517,11 @@ public class GraphicsEngine
                     tradeColor,
                     0f,
                     Vector2.Zero,
-                    FontScale,
+                    _ui.FontScale,
                     SpriteEffects.None,
                     0f
                 );
-                yPos += (int)(22 * FontScale);
+                yPos += (int)(22 * _ui.FontScale);
             }
         });
 
@@ -1591,11 +1544,11 @@ public class GraphicsEngine
                         satColor,
                         0f,
                         Vector2.Zero,
-                        FontScale,
+                        _ui.FontScale,
                         SpriteEffects.None,
                         0f
                     );
-                    yPos += (int)(22 * FontScale);
+                    yPos += (int)(22 * _ui.FontScale);
                 }
             }
         });
@@ -1609,7 +1562,7 @@ public class GraphicsEngine
         // Tło nagłówka sekcji
         _spriteBatch.Draw(
             _uiBackground,
-            new Rectangle(panelX + margin, yPos, panelWidth - margin * 2, (int)(25 * FontScale)),
+            new Rectangle(panelX + margin, yPos, panelWidth - margin * 2, (int)(25 * _ui.FontScale)),
             new Color(60, 80, 100, 150)
         );
 
@@ -1621,18 +1574,18 @@ public class GraphicsEngine
             Color.White,
             0f,
             Vector2.Zero,
-            FontScale,
+            _ui.FontScale,
             SpriteEffects.None,
             0f
         );
 
-        yPos += (int)(30 * FontScale);
+        yPos += (int)(30 * _ui.FontScale);
 
         // Rysuj zawartość sekcji
         drawContent();
 
         // Dodaj odstęp na końcu sekcji
-        yPos += (int)(10 * FontScale);
+        yPos += (int)(10 * _ui.FontScale);
     }
 
     private void DrawPanelBorder(int x, int y, int width, int height, Color color)
@@ -1717,8 +1670,8 @@ public class GraphicsEngine
                     new Vector2(buttonX + buttonSize / 2, buttonY + 12),
                     Color.White,
                     0f,
-                    _font.MeasureString(resource) * FontScale / 2,
-                    FontScale * 0.8f,
+                    _font.MeasureString(resource) * _ui.FontScale / 2,
+                    _ui.FontScale * 0.8f,
                     SpriteEffects.None,
                     0f
                 );
@@ -1734,21 +1687,5 @@ public class GraphicsEngine
 
             yPos = buttonY + 30; // Aktualizuj pozycję Y po narysowaniu wszystkich przycisków
         }
-    }
-
-    public Dictionary<string, int> PanelPos()
-    {
-        int panelX = GridMarginX + GridWidth * CellSize + 20;
-        int panelY = GridMarginY;
-        int panelWidth = (int)(ScreenWidth * 0.24f);
-        int panelHeight = GridHeight * CellSize;
-
-        return new Dictionary<string, int>
-        {
-            { "X", panelX },
-            { "Y", panelY },
-            { "Width", panelWidth },
-            { "Height", panelHeight }
-        };
     }
 }
