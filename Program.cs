@@ -1,2 +1,2 @@
-﻿using var game = new UEconomy.MainGame();
+﻿using var game = new UEconomy.Game.MainGame();
 game.Run();
