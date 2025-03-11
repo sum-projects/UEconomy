@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using UEconomy.Engine;
 using UEconomy.Game;
 using UEconomy.Graphics;
+using UEconomy.Graphics.DrawSystem;
 
 namespace UEconomy;
 
@@ -28,13 +29,15 @@ public class MainGame : Microsoft.Xna.Framework.Game
 
         _graphicsDeviceManager.IsFullScreen = false;
         _graphicsDeviceManager.PreferredBackBufferWidth = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width - 100;
-        _graphicsDeviceManager.PreferredBackBufferHeight = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height - 100;
+        _graphicsDeviceManager.PreferredBackBufferHeight =
+            GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height - 100;
 
         _gameEngine = new GameEngine(new Stats());
 
         _ui = new UI();
         _eventEngine = new EventEngine(_gameEngine, _ui);
-        _graphicsEngine = new GraphicsEngine(_gameEngine, _eventEngine, _ui);
+
+        //DrawSystemGame(Texture2D provinceTexture, Texture2D uiBackground, SpriteFont font, UI ui, EventEngine eventEngine)
     }
 
     protected override void Initialize()
@@ -42,14 +45,29 @@ public class MainGame : Microsoft.Xna.Framework.Game
         _ui.Initialize(GraphicsDevice);
 
         _gameEngine.Initialize(_ui.CellSize, _ui.GridWidth, _ui.GridHeight);
-        _graphicsEngine.Initialize();
 
         base.Initialize();
     }
 
     protected override void LoadContent()
     {
-        _graphicsEngine.LoadContent(Content.Load<SpriteFont>("Arial"), GraphicsDevice);
+        var provinceTexture = new Texture2D(GraphicsDevice, 1, 1);
+        provinceTexture.SetData(new[] { Color.White });
+
+
+        var uiBackground = new Texture2D(GraphicsDevice, 1, 1);
+        uiBackground.SetData(new[] { Color.Black });
+
+        var font = Content.Load<SpriteFont>("Arial");
+
+        _graphicsEngine = new GraphicsEngine(
+            GraphicsDevice,
+            _gameEngine, _eventEngine, _ui,
+            new DrawSystemGame(provinceTexture, uiBackground, font, _ui, _eventEngine),
+            new DrawSystemProvince(provinceTexture, uiBackground, font, _ui, _eventEngine),
+            new DrawSystemStats(provinceTexture, uiBackground, font, _ui, _eventEngine)
+        );
+
 
         base.LoadContent();
     }
@@ -63,7 +81,6 @@ public class MainGame : Microsoft.Xna.Framework.Game
         {
             Exit();
         }
-
 
         _gameEngine.Update(gameTime);
         _eventEngine.Update();

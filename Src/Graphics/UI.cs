@@ -43,6 +43,12 @@ public class UI
 
         CalculateUIScaling();
 
+        // int panelWidth = (int)(_ui.ScreenWidth * 0.35f);
+        // int panelHeight = (int)(_ui.ScreenHeight * 0.7f);
+        // int panelX = (_ui.ScreenWidth - panelWidth) / 2;
+        // int panelY = (_ui.ScreenHeight - panelHeight) / 2;
+
+
         PanelX = GridMarginX + GridWidth * CellSize + 20;
         PanelY = GridMarginY;
         PanelWidth = (int)(ScreenWidth * 0.24f);
