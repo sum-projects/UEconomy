@@ -1,0 +1,439 @@
+﻿@model UEconomy.Game
+@{
+    ViewData["Title"] = "UEconomy";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/css/site.css"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .main-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .provinces {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .province-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .province-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .buildings {
+            margin-top: 20px;
+        }
+
+        .building-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+        }
+
+        .speed-control label {
+            margin-right: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 5px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .building-option {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .building-option:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>UEconomy</h1>
+
+    <div class="controls">
+        <div>
+            <button id="startBtn" class="btn btn-primary">Start</button>
+            <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
+        </div>
+        <div class="speed-control">
+            <label for="speedRange">Speed:</label>
+            <input type="range" id="speedRange" min="1" max="10" value="1">
+            <span id="speedValue">1x</span>
+        </div>
+        <div>
+            Day: <span id="currentDay">1</span>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="sidebar">
+            <h2>Statistics</h2>
+            <div id="globalStats">
+                <p>Total Population: <span id="totalPop">0</span></p>
+                <p>Total Food: <span id="totalFood">0</span></p>
+                <p>Total Products: <span id="totalProducts">0</span></p>
+                <p>Total Resources: <span id="totalResources">0</span></p>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <h2>Provinces</h2>
+            <div id="provinces" class="provinces">
+                <!-- Provinces will be dynamically populated here -->
+            </div>
+
+            <h2>Selected Province</h2>
+            <div id="selectedProvince">
+                <p>No province selected</p>
+            </div>
+
+            <h2>Buildings</h2>
+            <button id="buildBtn" class="btn btn-primary">Build New</button>
+            <div id="buildings" class="buildings">
+                <!-- Buildings will be dynamically populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Build Modal -->
+    <div id="buildModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Select Building Type</h2>
+            <div id="buildingOptions">
+                <div class="building-option" data-type="Workshop">
+                    <h3>Workshop</h3>
+                    <p>Produces tools</p>
+                    <p>Cost: 500 Wood, 200 Iron</p>
+                </div>
+                <div class="building-option" data-type="TextileMill">
+                    <h3>Textile Mill</h3>
+                    <p>Produces cloth</p>
+                    <p>Cost: 400 Wood, 100 Iron</p>
+                </div>
+                <div class="building-option" data-type="Glassworks">
+                    <h3>Glassworks</h3>
+                    <p>Produces glass</p>
+                    <p>Cost: 300 Wood, 100 Coal</p>
+                </div>
+                <div class="building-option" data-type="IronMine">
+                    <h3>Iron Mine</h3>
+                    <p>Produces iron</p>
+                    <p>Cost: 200 Wood, 100 Tools</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+<script>
+        // Variables
+        let currentProvinceId = null;
+        let connection = null;
+
+        // DOM Elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const speedRange = document.getElementById('speedRange');
+        const speedValue = document.getElementById('speedValue');
+        const currentDayEl = document.getElementById('currentDay');
+        const totalPopEl = document.getElementById('totalPop');
+        const totalFoodEl = document.getElementById('totalFood');
+        const totalProductsEl = document.getElementById('totalProducts');
+        const totalResourcesEl = document.getElementById('totalResources');
+        const provincesContainer = document.getElementById('provinces');
+        const selectedProvinceContainer = document.getElementById('selectedProvince');
+        const buildingsContainer = document.getElementById('buildings');
+        const buildBtn = document.getElementById('buildBtn');
+        const buildModal = document.getElementById('buildModal');
+        const closeModalBtn = document.querySelector('.close');
+        const buildingOptions = document.querySelectorAll('.building-option');
+
+        // Initialize SignalR
+        function initSignalR() {
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl("/gameHub")
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
+
+            connection.on("ReceiveGameUpdate", (gameData) => {
+                updateUI(gameData);
+            });
+
+            connection.on("GameStarted", () => {
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            });
+
+            connection.on("GameStopped", () => {
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            });
+
+            connection.on("SpeedChanged", (speed) => {
+                speedRange.value = speed;
+                speedValue.textContent = speed + 'x';
+            });
+
+            connection.start()
+                .then(() => {
+                    console.log("SignalR Connected");
+                    // Request initial game state
+                    connection.invoke("SendGameUpdate");
+                })
+                .catch((err) => console.error(err));
+        }
+
+        // Update UI with game data
+        function updateUI(gameData) {
+            // Update day
+            currentDayEl.textContent = gameData.currentDay;
+
+            // Update global stats
+            let totalPop = 0;
+            let totalFood = 0;
+            let totalProducts = 0;
+            let totalResources = 0;
+
+            // Clear provinces container
+            provincesContainer.innerHTML = '';
+
+            // Populate provinces
+            gameData.countries.forEach(country => {
+                country.provinces.forEach(province => {
+                    // Update stats
+                    totalPop += province.popCount;
+
+                    if (province.marketStats) {
+                        totalFood += province.marketStats.totalFood || 0;
+                        totalProducts += province.marketStats.totalProducts || 0;
+                        totalResources += province.marketStats.totalResources || 0;
+                    }
+
+                    // Create province card
+                    const provinceCard = document.createElement('div');
+                    provinceCard.className = 'province-card';
+                    provinceCard.dataset.id = province.id;
+                    provinceCard.innerHTML = `
+                        <h3>${province.name}</h3>
+                        <p>Population: ${province.popCount}</p>
+                        <p>Buildings: ${province.buildings ? province.buildings.length : 0}</p>
+                    `;
+
+                    provinceCard.addEventListener('click', () => {
+                        selectProvince(province);
+                    });
+
+                    provincesContainer.appendChild(provinceCard);
+
+                    // If this is the currently selected province, update its detailed view
+                    if (currentProvinceId === province.id) {
+                        selectProvince(province);
+                    }
+                });
+            });
+
+            // Update global stats display
+            totalPopEl.textContent = totalPop;
+            totalFoodEl.textContent = totalFood;
+            totalProductsEl.textContent = totalProducts;
+            totalResourcesEl.textContent = totalResources;
+        }
+
+        // Select a province to display details
+        function selectProvince(province) {
+            currentProvinceId = province.id;
+
+            // Update selected province display
+            selectedProvinceContainer.innerHTML = `
+                <h3>${province.name}</h3>
+                <p>Population: ${province.popCount}</p>
+                <div class="market-stats">
+                    <h4>Market</h4>
+                    <p>Food: ${province.marketStats?.totalFood || 0}</p>
+                    <p>Products: ${province.marketStats?.totalProducts || 0}</p>
+                    <p>Resources: ${province.marketStats?.totalResources || 0}</p>
+                </div>
+            `;
+
+            // Update buildings display
+            buildingsContainer.innerHTML = '';
+
+            if (province.buildings && province.buildings.length > 0) {
+                province.buildings.forEach(building => {
+                    const buildingCard = document.createElement('div');
+                    buildingCard.className = 'building-card';
+                    buildingCard.innerHTML = `
+                        <h4>${building.type}</h4>
+                        <p>Level: ${building.level}</p>
+                        <p>Employees: ${building.currentEmployees}/${building.maxEmployees}</p>
+                    `;
+                    buildingsContainer.appendChild(buildingCard);
+                });
+            } else {
+                buildingsContainer.innerHTML = '<p>No buildings in this province</p>';
+            }
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', () => {
+            connection.invoke("StartGame");
+        });
+
+        stopBtn.addEventListener('click', () => {
+            connection.invoke("StopGame");
+        });
+
+        speedRange.addEventListener('input', () => {
+            const speed = parseInt(speedRange.value);
+            speedValue.textContent = speed + 'x';
+            connection.invoke("SetSpeed", speed);
+        });
+
+        buildBtn.addEventListener('click', () => {
+            // Only show the modal if a province is selected
+            if (currentProvinceId) {
+                buildModal.style.display = 'block';
+            } else {
+                alert('Please select a province first');
+            }
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            buildModal.style.display = 'none';
+        });
+
+        // Close modal on outside click
+        window.addEventListener('click', (event) => {
+            if (event.target === buildModal) {
+                buildModal.style.display = 'none';
+            }
+        });
+
+        buildingOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const buildingType = option.dataset.type;
+
+                if (currentProvinceId) {
+                    connection.invoke("ConstructBuilding", currentProvinceId, buildingType)
+                        .then(() => {
+                            buildModal.style.display = 'none';
+                        })
+                        .catch(err => console.error(err));
+                }
+            });
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initSignalR();
+        });
+    </script>
+</body>
+</html>

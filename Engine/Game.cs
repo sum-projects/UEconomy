@@ -3,7 +3,7 @@
 public class Game
 {
     private int speed = 1;
-    private List<Country> countries = new();
+    private List<Country> countries;
     private int currentDay = 0;
 
     public Game(List<Country> countries)
@@ -34,16 +34,6 @@ public class Game
 
     public Province? GetProvinceById(int provinceId)
     {
-        foreach (var country in countries)
-        {
-            foreach (var province in country.GetProvinces())
-            {
-                if (province.GetId() == provinceId)
-                {
-                    return province;
-                }
-            }
-        }
-        return null;
+        return countries.SelectMany(country => country.GetProvinces()).FirstOrDefault(province => province.GetId() == provinceId);
     }
 }
