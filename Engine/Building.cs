@@ -1,83 +1,5 @@
 namespace UEconomy;
 
-public enum StuffType
-{
-    Tool,
-    Glass,
-    Cloth,
-    Plank,
-    Furniture,
-}
-
-public enum FoodType
-{
-    Wheat,
-    Rice,
-    Maize,
-}
-
-public enum ResourceType
-{
-    Iron,
-    Coal,
-    Wood,
-}
-
-public struct Stuff<T>
-{
-    public T Type { get; }
-    public int Amount { get; }
-
-    public Stuff(T type, int amount)
-    {
-        Type = type;
-        Amount = amount;
-    }
-
-    public Stuff<T> WithAmount(int newAmount)
-    {
-        return new Stuff<T>(Type, newAmount);
-    }
-}
-
-public class Storage<T>
-{
-    private Dictionary<T, int> items = new();
-
-    public void Store(Stuff<T> stuff)
-    {
-        if (items.ContainsKey(stuff.Type))
-        {
-            items[stuff.Type] += stuff.Amount;
-        }
-        else
-        {
-            items[stuff.Type] = stuff.Amount;
-        }
-    }
-
-    public bool TryTake(T type, int amount, out Stuff<T> takenStuff)
-    {
-        if (items.ContainsKey(type) && items[type] >= amount)
-        {
-            items[type] -= amount;
-            takenStuff = new Stuff<T>(type, amount);
-            return true;
-        }
-
-        takenStuff = default;
-        return false;
-    }
-
-    public int GetAvailableAmount(T type)
-    {
-        return items.ContainsKey(type) ? items[type] : 0;
-    }
-}
-
-
-
-
 public abstract class Building<T> where T : Enum
 {
     protected int id;
@@ -190,6 +112,21 @@ public abstract class Building<T> where T : Enum
         {
             productStorage.TryTake(product.Type, product.Amount, out _);
         }
+    }
+
+    public int GetLevel()
+    {
+        return level;
+    }
+
+    public int GetCurrentEmployees()
+    {
+        return currentEmployees;
+    }
+
+    public int GetMaxEmployees()
+    {
+        return maxEmployeesPerLevel * level;
     }
 }
 
