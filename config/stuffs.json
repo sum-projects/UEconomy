@@ -1,0 +1,50 @@
+﻿[
+  {
+    "id": "tool",
+    "category": "construction"
+  },
+  {
+    "id": "glass",
+    "category": "construction"
+  },
+  {
+    "id": "plank",
+    "category": "construction"
+  },
+  {
+    "id": "cloth",
+    "category": "material"
+  },
+  {
+    "id": "furniture",
+    "category": "goods"
+  },
+  {
+    "id": "wheat",
+    "category": "goods"
+  },
+  {
+    "id": "rice",
+    "category": "goods"
+  },
+  {
+    "id": "maize",
+    "category": "goods"
+  },
+  {
+    "id": "wood",
+    "category": "material"
+  },
+  {
+    "id": "cooper",
+    "category": "material"
+  },
+  {
+    "id": "iron",
+    "category": "material"
+  },
+  {
+    "id": "coal",
+    "category": "material"
+  }
+]

@@ -1,121 +1,43 @@
-﻿namespace UEconomy;
+﻿namespace UEconomy.Engine;
 
 public class Province
 {
-    private int id;
-    private string name;
-    private List<Pop> pops = new();
-    private Market localMarket = new();
-    private List<Building<StuffType>> factories = new();
-    private List<Building<FoodType>> farms = new();
-    private List<Building<ResourceType>> mines = new();
+    public string Id { get; }
+    public int Population { get; }
+    public Market LocalMarket { get; } = new();
+    public List<Building> Buildings { get; } = new();
 
-    public Province(int id, string name, int pops)
+    public Province(string id, int population)
     {
-        this.id = id;
-        this.name = name;
-        for (var i = 0; i < pops; i++)
-        {
-            this.pops.Add(new Pop(i));
-        }
+        Id = id;
+        Population = population;
     }
 
     public void Update()
     {
-        foreach (var pop in pops)
+        foreach (var building in Buildings)
         {
-            var (foodSurplus, clothSurplus, furnitureSurplus, woodSurplus) = pop.ProduceSubsistence();
-
-            localMarket.AddFood(foodSurplus);
-            localMarket.AddProduct(clothSurplus);
-            localMarket.AddProduct(furnitureSurplus);
-            localMarket.AddResource(woodSurplus);
-
-            pop.Consume();
-        }
-
-        foreach (var factory in factories)
-        {
-            factory.Work();
-        }
-
-        foreach (var farm in farms)
-        {
-            farm.Work();
-        }
-
-        foreach (var mine in mines)
-        {
-            mine.Work();
+            building.Work();
         }
     }
 
-    public Dictionary<string, int> GetMarketStatistics()
+    public void AddBuilding(Building building)
     {
-        return localMarket.GetMarketStatistics();
-    }
-
-    public void AddFactory(Building<StuffType> factory)
-    {
-        factories.Add(factory);
-    }
-
-    public void AddFarm(Building<FoodType> farm)
-    {
-        farms.Add(farm);
-    }
-
-    public void AddMine(Building<ResourceType> mine)
-    {
-        mines.Add(mine);
-    }
-
-    public int GetId()
-    {
-        return id;
-    }
-
-    public string GetName()
-    {
-        return name;
-    }
-
-    public int GetPopCount()
-    {
-        return pops.Count;
+        Buildings.Add(building);
     }
 
     public List<object> GetAllBuildings()
     {
         var allBuildings = new List<object>();
 
-        foreach (var factory in factories)
+        foreach (var building in Buildings)
         {
-            allBuildings.Add(new {
-                type = factory.GetType().Name,
-                level = factory.GetLevel(),
-                currentEmployees = factory.GetCurrentEmployees(),
-                maxEmployees = factory.GetMaxEmployees()
-            });
-        }
-
-        foreach (var farm in farms)
-        {
-            allBuildings.Add(new {
-                type = farm.GetType().Name,
-                level = farm.GetLevel(),
-                currentEmployees = farm.GetCurrentEmployees(),
-                maxEmployees = farm.GetMaxEmployees()
-            });
-        }
-
-        foreach (var mine in mines)
-        {
-            allBuildings.Add(new {
-                type = mine.GetType().Name,
-                level = mine.GetLevel(),
-                currentEmployees = mine.GetCurrentEmployees(),
-                maxEmployees = mine.GetMaxEmployees()
+            allBuildings.Add(new
+            {
+                id = building.Id,
+                level = building.Level,
+                currentEmployees = building.CurrentEmployees,
+                maxEmployees = building.MaxEmployeesPerLevel,
             });
         }
 

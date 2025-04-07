@@ -1,4 +1,5 @@
-﻿using UEconomy;
+﻿using Microsoft.AspNetCore.SignalR;
+using UEconomy.Engine;
 
 namespace UI;
 
@@ -9,24 +10,32 @@ public class GameService
     private int speedMultiplier = 1;
     private Timer? gameTimer;
 
-    public GameService()
+    private readonly IHubContext<GameHub> HubContext;
+
+    public GameService(IHubContext<GameHub> hubContext)
     {
-        var province = new Province(1, "Province", 50);
-        var country = new Country(1, "Country", new List<Province> { province });
-        game = new Game(new List<Country> { country });
+        HubContext = hubContext;
+
+        game = new Game();
     }
 
     public Game GetGame() => game;
 
-    public void Start()
+    public void StartGame()
     {
-        if (isRunning) return;
+        Console.WriteLine("StartGame called in GameService");
+        if (isRunning)
+        {
+            Console.WriteLine("Game already running, ignoring start request");
+            return;
+        }
 
+        Console.WriteLine("Starting game simulation");
         isRunning = true;
         gameTimer = new Timer(UpdateGame, null, 0, 1000 / speedMultiplier);
     }
 
-    public void Stop()
+    public void StopGame()
     {
         isRunning = false;
         gameTimer?.Dispose();
@@ -46,17 +55,44 @@ public class GameService
 
     private void UpdateGame(object? state)
     {
+        Console.WriteLine($"Updating game to day: {game.GetCurrentDay() + 1}");
         game.Update();
+        Console.WriteLine($"Game updated to day: {game.GetCurrentDay()}");
+
+        var gameData = new
+        {
+            CurrentDay = game.GetCurrentDay(),
+            Countries = game.GetCountries().Select(c => new
+            {
+                Id = c.GetId(),
+                Name = c.GetName(),
+                Provinces = c.GetProvinces().Select(p => new
+                {
+                    Id = p.GetId(),
+                    Name = p.GetName(),
+                    PopCount = p.GetPopCount(),
+                    Buildings = p.GetAllBuildings(),
+                    MarketStats = p.GetMarketStatistics()
+                })
+            })
+        };
+
+        HubContext.Clients.All.SendAsync("ReceiveGameUpdate", gameData);
     }
 
-    public void ConstructBuilding(int provinceId, string buildingType, int level = 1)
+    public void ConstructBuilding(string provinceId, string buildingId)
     {
         var province = game.GetProvinceById(provinceId);
         if (province == null) return;
 
+        var buildingStruct = game.GetBuildingStruct(buildingId);
+        if (buildingStruct == null) return;
+
+
         switch (buildingType)
         {
             case "Workshop":
+                province.Add
                 var workshop = new Workshop(
                     GetNextBuildingId(), level, 0,
                     new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },

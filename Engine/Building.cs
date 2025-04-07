@@ -1,475 +1,146 @@
-namespace UEconomy;
+namespace UEconomy.Engine;
 
-public abstract class Building<T> where T : Enum
+public class BuildingStorage
 {
-    protected int id;
-    protected int level;
-    protected int basicOutputPerLevel;
-    protected int maxEmployeesPerLevel;
-    protected int currentEmployees;
+    public Dictionary<string, int> Items { get; } = new();
+}
 
-    protected List<Stuff<ResourceType>> neededResources;
-    protected List<Stuff<StuffType>> neededProducts;
+public class Building
+{
+    public string Id { get; }
+    public int Level { get; }
+    public int BasicOutputPerLevel { get; }
+    public int MaxEmployeesPerLevel { get; }
+    public int CurrentEmployees { get; }
 
-    protected Storage<ResourceType> resourceStorage = new();
-    protected Storage<StuffType> productStorage = new();
-    protected Storage<T> outputStorage = new();
+    public List<Dictionary<string, int>> InputStuff { get; }
+    public List<Dictionary<string, int>> OutputStuff { get; }
 
-    protected Building(
-        int id,
+    public BuildingStorage InputStorage { get; }
+    public BuildingStorage OutputStorage { get; }
+
+    public Building(
+        string id,
         int level,
         int basicOutputPerLevel,
         int maxEmployeesPerLevel,
         int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
+        List<Dictionary<string, int>> inputStuff,
+        List<Dictionary<string, int>> outputStuff,
+        BuildingStorage inputStorage,
+        BuildingStorage outputStorage
     )
     {
-        this.id = id;
-        this.level = level;
-        this.basicOutputPerLevel = basicOutputPerLevel;
-        this.maxEmployeesPerLevel = maxEmployeesPerLevel;
-        this.currentEmployees = currentEmployees;
-        this.neededResources = neededResources;
-        this.neededProducts = neededProducts;
+        Id = id;
+        Level = level;
+        BasicOutputPerLevel = basicOutputPerLevel;
+        MaxEmployeesPerLevel = maxEmployeesPerLevel;
+        CurrentEmployees = currentEmployees;
+
+        InputStuff = inputStuff;
+        OutputStuff = outputStuff;
+
+        InputStorage = inputStorage;
+        OutputStorage = outputStorage;
     }
 
-    public void BuyNeeds(
-        List<Stuff<ResourceType>> resources,
-        List<Stuff<StuffType>> products
-    )
+    public void Work()
     {
-        foreach (var resource in resources)
-        {
-            resourceStorage.Store(resource);
-        }
-
-        foreach (var product in products)
-        {
-            productStorage.Store(product);
-        }
-    }
-
-    public Stuff<T> TakeOutput(T type, int amount)
-    {
-        return outputStorage.TryTake(type, amount, out var output) ? output : new Stuff<T>(type, 0);
-    }
-
-    public abstract Stuff<T> Work();
-
-    protected double CalculateOutputValue()
-    {
-        var baseOutput = this.level * this.basicOutputPerLevel;
-        var maxEmployees = this.maxEmployeesPerLevel * this.level;
-
-        var employeeEfficiency = maxEmployees > 0 ? Math.Min((double)currentEmployees / maxEmployees, 1.0) : 0.0;
-
-        if (employeeEfficiency <= 0.0)
-        {
-            return 0;
-        }
-
-        var resourceEfficiency = 1.0;
-        if (neededResources.Count > 0)
-        {
-            var totalResourcePercentage = (
-                from neededResource
-                    in neededResources
-                let availableAmount = resourceStorage.GetAvailableAmount(neededResource.Type)
-                select Math.Min(1.0, (double)availableAmount / neededResource.Amount)
-            ).Sum();
-
-            resourceEfficiency = totalResourcePercentage / neededResources.Count;
-        }
-
-
-        var productEfficiency = 1.0;
-        if (neededProducts.Count > 0)
-        {
-            var totalProductPercentage = (
-                from neededProduct
-                    in neededProducts
-                let availableAmount = productStorage.GetAvailableAmount(neededProduct.Type)
-                select Math.Min(1.0, (double)availableAmount / neededProduct.Amount)
-            ).Sum();
-
-            productEfficiency = totalProductPercentage / neededProducts.Count;
-        }
-
-        var totalEfficiency = Math.Min(employeeEfficiency, Math.Min(resourceEfficiency, productEfficiency));
-
-        return baseOutput * totalEfficiency;
-    }
-
-    protected void ConsumeNeeds()
-    {
-        foreach (var resource in neededResources)
-        {
-            resourceStorage.TryTake(resource.Type, resource.Amount, out _);
-        }
-
-        foreach (var product in neededProducts)
-        {
-            productStorage.TryTake(product.Type, product.Amount, out _);
-        }
-    }
-
-    public int GetLevel()
-    {
-        return level;
-    }
-
-    public int GetCurrentEmployees()
-    {
-        return currentEmployees;
-    }
-
-    public int GetMaxEmployees()
-    {
-        return maxEmployeesPerLevel * level;
-    }
-}
-
-public abstract class Factory : Building<StuffType>
-{
-    protected Factory(
-        int id,
-        int level,
-        int basicOutputPerLevel,
-        int maxEmployeesPerLevel,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, basicOutputPerLevel, maxEmployeesPerLevel, currentEmployees, neededResources, neededProducts)
-    {
-    }
-}
-
-public class Workshop : Factory
-{
-    public Workshop(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, 100, 20, currentEmployees, neededResources, neededProducts)
-    {
-    }
-
-    public override Stuff<StuffType> Work()
-    {
-        var outputValue = CalculateOutputValue();
-        var toolsProduced = (int)Math.Round(outputValue);
-
-        if (toolsProduced <= 0) return new Stuff<StuffType>(StuffType.Tool, 0);
-
-        ConsumeNeeds();
-
-        var output = new Stuff<StuffType>(StuffType.Tool, toolsProduced);
-        outputStorage.Store(output);
-        return output;
 
     }
-}
 
-public class TextileMill : Factory
-{
-    public TextileMill(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, 120, 25, currentEmployees, neededResources, neededProducts)
-    {
-    }
-
-    public override Stuff<StuffType> Work()
-    {
-        var outputValue = CalculateOutputValue();
-        var clothProduced = (int)Math.Round(outputValue);
-
-        if (clothProduced <= 0) return new Stuff<StuffType>(StuffType.Cloth, 0);
-
-        ConsumeNeeds();
-
-        var output = new Stuff<StuffType>(StuffType.Cloth, clothProduced);
-        outputStorage.Store(output);
-        return output;
-
-    }
-}
-
-public class LumberMill : Factory
-{
-    public LumberMill(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, 150, 30, currentEmployees, neededResources, neededProducts)
-    {
-    }
-
-    public override Stuff<StuffType> Work()
-    {
-        var outputValue = CalculateOutputValue();
-        var planksProduced = (int)Math.Round(outputValue);
-
-        if (planksProduced <= 0) return new Stuff<StuffType>(StuffType.Plank, 0);
-
-        ConsumeNeeds();
-
-        var output = new Stuff<StuffType>(StuffType.Plank, planksProduced);
-        outputStorage.Store(output);
-        return output;
-    }
-}
-
-public class FurnitureFactory : Factory
-{
-    public FurnitureFactory(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, 200, 35, currentEmployees, neededResources, neededProducts)
-    {
-    }
-
-    public override Stuff<StuffType> Work()
-    {
-        var outputValue = CalculateOutputValue();
-        var furnitureProduced = (int)Math.Round(outputValue);
-
-        if (furnitureProduced <= 0) return new Stuff<StuffType>(StuffType.Furniture, 0);
-
-        ConsumeNeeds();
-
-        var output = new Stuff<StuffType>(StuffType.Furniture, furnitureProduced);
-        outputStorage.Store(output);
-        return output;
-
-    }
-}
-
-public class Glassworks : Factory
-{
-    public Glassworks(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, 80, 15, currentEmployees, neededResources, neededProducts)
-    {
-    }
-
-    public override Stuff<StuffType> Work()
-    {
-        var outputValue = CalculateOutputValue();
-        var glassProduced = (int)Math.Round(outputValue);
-
-        if (glassProduced <= 0) return new Stuff<StuffType>(StuffType.Glass, 0);
-
-        ConsumeNeeds();
-
-        var output = new Stuff<StuffType>(StuffType.Glass, glassProduced);
-        outputStorage.Store(output);
-        return output;
-
-    }
-}
-
-public abstract class Farm : Building<FoodType>
-{
-    protected Farm(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, 1000, 50, currentEmployees, neededResources, neededProducts)
-    {
-    }
-}
-
-public class WheatFarm : Farm
-{
-    public WheatFarm(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, currentEmployees, neededResources, neededProducts)
-    {
-    }
-
-    public override Stuff<FoodType> Work()
-    {
-        var outputValue = CalculateOutputValue();
-        var wheatProduced = (int)Math.Round(outputValue);
-
-        if (wheatProduced <= 0) return new Stuff<FoodType>(FoodType.Wheat, 0);
-
-        ConsumeNeeds();
-
-        var output = new Stuff<FoodType>(FoodType.Wheat, wheatProduced);
-        outputStorage.Store(output);
-        return output;
-    }
-}
-
-public class RiceFarm : Farm
-{
-    public RiceFarm(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, currentEmployees, neededResources, neededProducts)
-    {
-    }
-
-    public override Stuff<FoodType> Work()
-    {
-        var outputValue = CalculateOutputValue();
-        var riceProduced = (int)Math.Round(outputValue);
-
-        if (riceProduced <= 0) return new Stuff<FoodType>(FoodType.Rice, 0);
-
-        ConsumeNeeds();
-
-        var output = new Stuff<FoodType>(FoodType.Rice, riceProduced);
-        outputStorage.Store(output);
-        return output;
-
-    }
-}
-
-public class MaizeFarm : Farm
-{
-    public MaizeFarm(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, currentEmployees, neededResources, neededProducts)
-    {
-    }
-
-    public override Stuff<FoodType> Work()
-    {
-        var outputValue = CalculateOutputValue();
-        var maizeProduced = (int)Math.Round(outputValue);
-
-        if (maizeProduced <= 0) return new Stuff<FoodType>(FoodType.Maize, 0);
-
-        ConsumeNeeds();
-
-        var output = new Stuff<FoodType>(FoodType.Maize, maizeProduced);
-        outputStorage.Store(output);
-        return output;
-
-    }
-}
-
-public abstract class Mine : Building<ResourceType>
-{
-    protected Mine(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, 500, 40, currentEmployees, neededResources, neededProducts)
-    {
-    }
-}
-
-public class IronMine : Mine
-{
-    public IronMine(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, currentEmployees, neededResources, neededProducts)
-    {
-    }
-
-    public override Stuff<ResourceType> Work()
-    {
-        var outputValue = CalculateOutputValue();
-        var ironProduced = (int)Math.Round(outputValue);
-
-        if (ironProduced <= 0) return new Stuff<ResourceType>(ResourceType.Iron, 0);
-
-        ConsumeNeeds();
-
-        var output = new Stuff<ResourceType>(ResourceType.Iron, ironProduced);
-        outputStorage.Store(output);
-        return output;
-    }
-}
-
-public class CoalMine : Mine
-{
-    public CoalMine(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, currentEmployees, neededResources, neededProducts)
-    {
-    }
-
-    public override Stuff<ResourceType> Work()
-    {
-        var outputValue = CalculateOutputValue();
-        var coalProduced = (int)Math.Round(outputValue);
-
-        if (coalProduced <= 0) return new Stuff<ResourceType>(ResourceType.Coal, 0);
-
-        ConsumeNeeds();
-
-        var output = new Stuff<ResourceType>(ResourceType.Coal, coalProduced);
-        outputStorage.Store(output);
-        return output;
-    }
-}
-
-public class LoggingCamp : Mine
-{
-    public LoggingCamp(
-        int id,
-        int level,
-        int currentEmployees,
-        List<Stuff<ResourceType>> neededResources,
-        List<Stuff<StuffType>> neededProducts
-    ) : base(id, level, currentEmployees, neededResources, neededProducts)
-    {
-    }
-
-    public override Stuff<ResourceType> Work()
-    {
-        var outputValue = CalculateOutputValue();
-        var woodProduced = (int)Math.Round(outputValue);
-
-        if (woodProduced <= 0) return new Stuff<ResourceType>(ResourceType.Wood, 0);
-
-        ConsumeNeeds();
-
-        var output = new Stuff<ResourceType>(ResourceType.Wood, woodProduced);
-        outputStorage.Store(output);
-        return output;
-    }
+    // public void BuyNeeds(
+    //     List<Stuff<ResourceType>> resources,
+    //     List<Stuff<StuffType>> products
+    // )
+    // {
+    //     foreach (var resource in resources)
+    //     {
+    //         resourceStorage.Store(resource);
+    //     }
+    //
+    //     foreach (var product in products)
+    //     {
+    //         productStorage.Store(product);
+    //     }
+    // }
+    //
+    // public Stuff<T> TakeOutput(T type, int amount)
+    // {
+    //     return outputStorage.TryTake(type, amount, out var output) ? output : new Stuff<T>(type, 0);
+    // }
+    //
+    // public abstract Stuff<T> Work();
+    //
+    // protected double CalculateOutputValue()
+    // {
+    //     var baseOutput = this.level * this.basicOutputPerLevel;
+    //     var maxEmployees = this.maxEmployeesPerLevel * this.level;
+    //
+    //     var employeeEfficiency = maxEmployees > 0 ? Math.Min((double)currentEmployees / maxEmployees, 1.0) : 0.0;
+    //
+    //     if (employeeEfficiency <= 0.0)
+    //     {
+    //         return 0;
+    //     }
+    //
+    //     var resourceEfficiency = 1.0;
+    //     if (neededResources.Count > 0)
+    //     {
+    //         var totalResourcePercentage = (
+    //             from neededResource
+    //                 in neededResources
+    //             let availableAmount = resourceStorage.GetAvailableAmount(neededResource.Type)
+    //             select Math.Min(1.0, (double)availableAmount / neededResource.Amount)
+    //         ).Sum();
+    //
+    //         resourceEfficiency = totalResourcePercentage / neededResources.Count;
+    //     }
+    //
+    //
+    //     var productEfficiency = 1.0;
+    //     if (neededProducts.Count > 0)
+    //     {
+    //         var totalProductPercentage = (
+    //             from neededProduct
+    //                 in neededProducts
+    //             let availableAmount = productStorage.GetAvailableAmount(neededProduct.Type)
+    //             select Math.Min(1.0, (double)availableAmount / neededProduct.Amount)
+    //         ).Sum();
+    //
+    //         productEfficiency = totalProductPercentage / neededProducts.Count;
+    //     }
+    //
+    //     var totalEfficiency = Math.Min(employeeEfficiency, Math.Min(resourceEfficiency, productEfficiency));
+    //
+    //     return baseOutput * totalEfficiency;
+    // }
+    //
+    // protected void ConsumeNeeds()
+    // {
+    //     foreach (var resource in neededResources)
+    //     {
+    //         resourceStorage.TryTake(resource.Type, resource.Amount, out _);
+    //     }
+    //
+    //     foreach (var product in neededProducts)
+    //     {
+    //         productStorage.TryTake(product.Type, product.Amount, out _);
+    //     }
+    // }
+    //
+    // public int GetLevel()
+    // {
+    //     return level;
+    // }
+    //
+    // public int GetCurrentEmployees()
+    // {
+    //     return currentEmployees;
+    // }
+    //
+    // public int GetMaxEmployees()
+    // {
+    //     return maxEmployeesPerLevel * level;
+    // }
 }

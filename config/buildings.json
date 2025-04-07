@@ -1,0 +1,305 @@
+﻿[
+  {
+    "id": "Workshop",
+    "productionMethods": {
+      "level0": {
+        "id": "hand_made",
+        "input": {},
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 1
+      }
+    },
+    "productionTypes": {
+      "level0": {
+        "id": "wood-tools",
+        "input": {
+          "wood": 1
+        },
+        "output": {
+          "tool": 1
+        },
+        "requiredTech": [],
+        "requiredMethod": []
+      },
+      "level1": {
+        "id": "cooper-tools",
+        "input": {
+          "wood": 2,
+          "cooper": 1
+        },
+        "output": {
+          "tool": 4
+        },
+        "requiredTech": [
+          "copper-processing"
+        ],
+        "requiredMethod": []
+      }
+    }
+  },
+  {
+    "id": "TextileMill",
+    "productionMethods": {
+      "level0": {
+        "id": "hand_made",
+        "input": {},
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 1
+      }
+    },
+    "productionTypes": {
+      "level0": {
+        "id": "cloth",
+        "input": {
+          "wood": 1
+        },
+        "output": {
+          "cloth": 1
+        },
+        "requiredTech": [],
+        "requiredMethod": []
+      }
+    }
+  },
+  {
+    "id": "LumberMill",
+    "productionMethods": {
+      "level0": {
+        "id": "hand_made",
+        "input": {},
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 1
+      }
+    },
+    "productionTypes": {
+      "level0": {
+        "id": "plank",
+        "input": {
+          "wood": 1
+        },
+        "output": {
+          "plank": 1
+        },
+        "requiredTech": [],
+        "requiredMethod": []
+      }
+    }
+  },
+  {
+    "id": "FurnitureFactory",
+    "productionMethods": {
+      "level0": {
+        "id": "hand_made",
+        "input": {},
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 1
+      }
+    },
+    "productionTypes": {
+      "level0": {
+        "id": "furniture",
+        "input": {
+          "wood": 1
+        },
+        "output": {
+          "furniture": 1
+        },
+        "requiredTech": [],
+        "requiredMethod": []
+      }
+    }
+  },
+  {
+    "id": "Glassworks",
+    "productionMethods": {
+      "level0": {
+        "id": "hand_made",
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 1
+      }
+    },
+    "productionTypes": {
+      "level0": {
+        "id": "glass",
+        "input": {
+          "wood": 1
+        },
+        "output": {
+          "glass": 1
+        },
+        "requiredTech": [],
+        "requiredMethod": []
+      }
+    }
+  },
+  {
+    "id": "WheatFarm",
+    "productionMethods": {
+      "level0": {
+        "id": "hand_harvest",
+        "input": {},
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 1
+      },
+      "level1": {
+        "id": "sickle_harvest",
+        "input": {
+          "tool": 1
+        },
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 2
+      }
+    },
+    "productionTypes": {
+      "level0": {
+        "id": "wheat",
+        "input": {},
+        "output": {
+          "wheat": 1
+        },
+        "requiredTech": [],
+        "requiredMethod": []
+      }
+    }
+  },
+  {
+    "id": "RiceFarm",
+    "productionMethods": {
+      "level0": {
+        "id": "hand_harvest",
+        "input": {},
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 1
+      },
+      "level1": {
+        "id": "sickle_harvest",
+        "input": {
+          "tool": 1
+        },
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 2
+      }
+    },
+    "productionTypes": {
+      "level0": {
+        "id": "rice",
+        "input": {},
+        "output": {
+          "rice": 1
+        },
+        "requiredTech": [],
+        "requiredMethod": []
+      }
+    }
+  },
+  {
+    "id": "MaizeFarm",
+    "productionMethods": {
+      "level0": {
+        "id": "hand_harvest",
+        "input": {},
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 1
+      },
+      "level1": {
+        "id": "sickle_harvest",
+        "input": {
+          "tool": 1
+        },
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 2
+      }
+    },
+    "productionTypes": {
+      "level0": {
+        "id": "maize",
+        "input": {},
+        "output": {
+          "maize": 1
+        },
+        "requiredTech": [],
+        "requiredMethod": []
+      }
+    }
+  },
+  {
+    "id": "IronMine",
+    "productionMethods": {
+      "level0": {
+        "id": "hand_made",
+        "input": {},
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 1
+      }
+    },
+    "productionTypes": {
+      "level0": {
+        "id": "iron",
+        "input": {},
+        "output": {
+          "iron": 1
+        },
+        "requiredTech": [],
+        "requiredMethod": []
+      }
+    }
+  },
+  {
+    "id": "CoalMine",
+    "productionMethods": {
+      "level0": {
+        "id": "hand_made",
+        "input": {},
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 1
+      }
+    },
+    "productionTypes": {
+      "level0": {
+        "id": "coal",
+        "input": {},
+        "output": {
+          "coal": 1
+        },
+        "requiredTech": [],
+        "requiredMethod": []
+      }
+    }
+  },
+  {
+    "id": "LoggingCamp",
+    "productionMethods": {
+      "level0": {
+        "id": "hand_made",
+        "input": {},
+        "requireTech": [],
+        "employeesNeeded": 100,
+        "outputMultiplayer": 1
+      }
+    },
+    "productionTypes": {
+      "level0": {
+        "id": "wood",
+        "input": {},
+        "output": {
+          "wood": 1
+        },
+        "requiredTech": [],
+        "requiredMethod": []
+      }
+    }
+  }
+]

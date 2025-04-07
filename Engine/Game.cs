@@ -1,39 +1,40 @@
-﻿namespace UEconomy;
+﻿namespace UEconomy.Engine;
 
 public class Game
 {
-    private int speed = 1;
-    private List<Country> countries;
-    private int currentDay = 0;
+    public List<Country> Countries { get; }
+    public List<BuildingStruct> ListAvailableBuildings;
 
-    public Game(List<Country> countries)
+    public Game()
     {
-        this.countries = countries;
+        Countries = LoaderConfig
+            .GetCountries()
+            .Select(
+                c => new Country(c.Id, c.Provinces.Select(
+                    p => new Province(p.Id, p.Population)
+                ).ToList())
+            ).ToList();
+
+
+        ListAvailableBuildings = LoaderConfig.GetBuildings();
     }
 
     public void Update()
     {
-        currentDay++;
-        Console.WriteLine($"Day {currentDay}");
-
-        foreach (var country in countries)
+        foreach (var country in Countries)
         {
             country.Update();
         }
     }
 
-    public int GetCurrentDay()
+    public Province? GetProvinceById(string provinceId)
     {
-        return currentDay;
+        return Countries.SelectMany(country => country.Provinces)
+            .FirstOrDefault(province => province.Id == provinceId);
     }
 
-    public List<Country> GetCountries()
+    public BuildingStruct? GetBuildingStruct(string buildingId)
     {
-        return countries;
-    }
-
-    public Province? GetProvinceById(int provinceId)
-    {
-        return countries.SelectMany(country => country.GetProvinces()).FirstOrDefault(province => province.GetId() == provinceId);
+        return ListAvailableBuildings.FirstOrDefault(building => building.Id == buildingId);
     }
 }

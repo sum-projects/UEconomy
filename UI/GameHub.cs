@@ -35,15 +35,21 @@ public class GameHub : Hub
         await Clients.All.SendAsync("ReceiveGameUpdate", gameData);
     }
 
+    public async Task GameUpdated()
+    {
+        await SendGameUpdate();
+    }
+
     public async Task StartGame()
     {
-        gameService.Start();
+        Console.WriteLine("StartGame called in GameHub");
+        gameService.StartGame();
         await Clients.All.SendAsync("GameStarted");
     }
 
     public async Task StopGame()
     {
-        gameService.Stop();
+        gameService.StopGame();
         await Clients.All.SendAsync("GameStopped");
     }
 

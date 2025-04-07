@@ -1,52 +1,34 @@
-﻿namespace UEconomy;
+﻿namespace UEconomy.Engine;
 
 public class Country
 {
-    private int id;
-    private string name;
-    private Market nationalMarket = new();
-    private List<Province> provinces;
+    public string Id { get; }
+    public Market NationalMarket { get; } = new();
+    public List<Province> Provinces { get; }
 
-
-    public Country(int id, string name, List<Province> provinces)
+    public Country(string id, List<Province> provinces)
     {
-        this.id = id;
-        this.name = name;
-        this.provinces = provinces;
+        Id = id;
+        Provinces = provinces;
     }
 
     public void Update()
     {
-        foreach (var province in provinces)
+        foreach (var province in Provinces)
         {
             province.Update();
         }
     }
 
-    public Dictionary<string, Dictionary<string, int>> GetProvinceStatistics()
-    {
-        var countryStats = new Dictionary<string, Dictionary<string, int>>();
-
-        foreach (var province in provinces)
-        {
-            countryStats[province.ToString()] = province.GetMarketStatistics();
-        }
-
-        return countryStats;
-    }
-
-    public int GetId()
-    {
-        return id;
-    }
-
-    public string GetName()
-    {
-        return name;
-    }
-
-    public List<Province> GetProvinces()
-    {
-        return provinces;
-    }
+    // public Dictionary<string, Dictionary<string, int>> GetProvinceStatistics()
+    // {
+    //     var countryStats = new Dictionary<string, Dictionary<string, int>>();
+    //
+    //     foreach (var province in Provinces)
+    //     {
+    //         countryStats[province.Id] = province.GetMarketStatistics();
+    //     }
+    //
+    //     return countryStats;
+    // }
 }

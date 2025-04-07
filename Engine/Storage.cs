@@ -1,36 +1,47 @@
-﻿namespace UEconomy;
+﻿namespace UEconomy.Engine;
 
-public class Storage<T>
+public struct Stuff
 {
-    private Dictionary<T, int> items = new();
+    public string Id { get; }
+    public string Category { get; }
+    public int Amount { get; }
+    public bool IsAvailable { get; }
 
-    public void Store(Stuff<T> stuff)
+    public Stuff(string id, string category, int amount, bool isAvailable)
     {
-        if (items.ContainsKey(stuff.Type))
+        Id = id;
+        Category = category;
+        Amount = amount;
+        IsAvailable = isAvailable;
+    }
+}
+
+public class Storage
+{
+    public List<Stuff> Items { get; } = new();
+
+    public void Store()
+    {
+        var configStuffs = LoaderConfig.GetStuff();
+
+        foreach (var configStuff in configStuffs)
         {
-            items[stuff.Type] += stuff.Amount;
-        }
-        else
-        {
-            items[stuff.Type] = stuff.Amount;
+            Items.Add(new Stuff(configStuff.Id, configStuff.Category, 0, true));
         }
     }
 
-    public bool TryTake(T type, int amount, out Stuff<T> takenStuff)
+    public int GetAmount(string id)
     {
-        if (items.ContainsKey(type) && items[type] >= amount)
-        {
-            items[type] -= amount;
-            takenStuff = new Stuff<T>(type, amount);
-            return true;
-        }
-
-        takenStuff = default;
-        return false;
+        return Items
+            .Where(stuff => stuff.Id == id)
+            .Select(stuff => stuff.Amount)
+            .FirstOrDefault();
     }
 
-    public int GetAvailableAmount(T type)
+    public void AddAmount(string id, int amount)
     {
-        return items.ContainsKey(type) ? items[type] : 0;
+        var stuff = Items.First(item => item.Id == id);
+        var index = Items.IndexOf(stuff);
+        Items[index] = new Stuff(stuff.Id, stuff.Category, stuff.Amount + amount, true);
     }
 }

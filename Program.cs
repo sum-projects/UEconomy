@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.SignalR;
 using UI;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
-builder.Services.AddSingleton<GameService>();
+builder.Services.AddSingleton<GameService>(sp => new GameService(sp.GetRequiredService<IHubContext<GameHub>>()));
 
 var app = builder.Build();
 var gameService = app.Services.GetRequiredService<GameService>();
@@ -28,6 +29,6 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}"
 );
 
-app.MapHub<GameHub>("/gamehub");
+app.MapHub<GameHub>("/gameHub");
 
 app.Run();

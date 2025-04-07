@@ -1,0 +1,8 @@
+﻿[
+  {
+    "id": "copper-processing",
+    "category": "economy",
+    "requireTech": [],
+    "cost": 100
+  }
+]

@@ -1,0 +1,11 @@
+﻿[
+  {
+    "id": "country0",
+    "provinces": [
+      {
+        "id": "province0",
+        "population": 1000
+      }
+    ]
+  }
+]

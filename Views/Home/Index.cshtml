@@ -1,4 +1,4 @@
-﻿@model UEconomy.Game
+﻿@* @model UEconomy.Game *@
 @{
     ViewData["Title"] = "UEconomy";
 }
@@ -263,6 +263,8 @@
                 .build();
 
             connection.on("ReceiveGameUpdate", (gameData) => {
+                console.log("Received game update:", gameData);
+                console.log(`Day: ${gameData.currentDay}, Provinces: ${gameData.countries[0].provinces.length}`);
                 updateUI(gameData);
             });
 
@@ -310,11 +312,16 @@
                     // Update stats
                     totalPop += province.popCount;
 
-                    if (province.marketStats) {
-                        totalFood += province.marketStats.totalFood || 0;
-                        totalProducts += province.marketStats.totalProducts || 0;
-                        totalResources += province.marketStats.totalResources || 0;
-                    }
+                     selectedProvinceContainer.innerHTML = `
+                         <h3>${province.name}</h3>
+                         <p>Population: ${province.popCount}</p>
+                         <div class="market-stats">
+                             <h4>Market</h4>
+                             <p>Food: ${province.marketStats?.TotalFood || 0}</p>
+                             <p>Products: ${province.marketStats?.TotalProducts || 0}</p>
+                             <p>Resources: ${province.marketStats?.TotalResources || 0}</p>
+                         </div>
+                     `;
 
                     // Create province card
                     const provinceCard = document.createElement('div');
@@ -383,7 +390,10 @@
 
         // Event Listeners
         startBtn.addEventListener('click', () => {
-            connection.invoke("StartGame");
+            console.log("Calling StartGame from client");
+            connection.invoke("StartGame")
+                .then(() => console.log("StartGame successfully called"))
+                .catch(err => console.error("Failed to call StartGame:", err));
         });
 
         stopBtn.addEventListener('click', () => {
