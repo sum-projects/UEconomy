@@ -16,18 +16,17 @@ public class GameHub : Hub
         var game = gameService.GetGame();
         var gameData = new
         {
-            CurrentDay = game.GetCurrentDay(),
-            Countries = game.GetCountries().Select(c => new
+            CurrentDay = gameService.GetCurrentDay(),
+            Countries = game.Countries.Select(c => new
             {
-                Id = c.GetId(),
-                Name = c.GetName(),
-                Provinces = c.GetProvinces().Select(p => new
+                Id = c.Id,
+                Provinces = c.Provinces.Select(p => new
                 {
-                    Id = p.GetId(),
-                    Name = p.GetName(),
-                    PopCount = p.GetPopCount(),
+                    Id = p.Id,
+                    Name = p.Id,
+                    PopCount = p.Population,
                     Buildings = p.GetAllBuildings(),
-                    MarketStats = p.GetMarketStatistics()
+                    MarketStats = p.LocalMarket.GetMarketStatistics()
                 })
             })
         };
@@ -59,7 +58,7 @@ public class GameHub : Hub
         await Clients.All.SendAsync("SpeedChanged", speed);
     }
 
-    public async Task ConstructBuilding(int provinceId, string buildingType)
+    public async Task ConstructBuilding(string provinceId, string buildingType)
     {
         gameService.ConstructBuilding(provinceId, buildingType);
         await SendGameUpdate();

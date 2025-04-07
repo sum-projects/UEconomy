@@ -1,5 +1,4 @@
-﻿@* @model UEconomy.Game *@
-@{
+﻿@{
     ViewData["Title"] = "UEconomy";
 }
 
@@ -19,14 +18,14 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
 
         .dashboard {
             display: grid;
-            grid-template-columns: 250px 1fr;
+            grid-template-columns: 300px 1fr;
             gap: 20px;
         }
 
@@ -35,6 +34,8 @@
             color: white;
             padding: 15px;
             border-radius: 5px;
+            height: calc(100vh - 150px);
+            overflow-y: auto;
         }
 
         .main-content {
@@ -42,6 +43,8 @@
             padding: 20px;
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: calc(100vh - 150px);
+            overflow-y: auto;
         }
 
         .controls {
@@ -51,6 +54,7 @@
             padding: 10px;
             background-color: #f0f0f0;
             border-radius: 5px;
+            align-items: center;
         }
 
         .btn {
@@ -58,6 +62,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            transition: all 0.2s;
         }
 
         .btn-primary {
@@ -65,9 +70,17 @@
             color: white;
         }
 
+        .btn-primary:hover {
+            background-color: #3e8e41;
+        }
+
         .btn-danger {
             background-color: #f44336;
             color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #d32f2f;
         }
 
         .provinces {
@@ -82,10 +95,17 @@
             padding: 15px;
             cursor: pointer;
             transition: all 0.3s;
+            background-color: #fff;
         }
 
         .province-card:hover {
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .province-card.active {
+            border: 2px solid #4CAF50;
+            box-shadow: 0 5px 15px rgba(76,175,80,0.3);
         }
 
         .buildings {
@@ -97,6 +117,7 @@
             border-radius: 5px;
             padding: 10px;
             margin-bottom: 10px;
+            background-color: #f9f9f9;
         }
 
         .speed-control {
@@ -126,8 +147,10 @@
             padding: 20px;
             border: 1px solid #888;
             width: 80%;
-            max-width: 500px;
+            max-width: 700px;
             border-radius: 5px;
+            max-height: 70vh;
+            overflow-y: auto;
         }
 
         .close {
@@ -138,22 +161,114 @@
             cursor: pointer;
         }
 
+        .close:hover {
+            color: #555;
+        }
+
+        .building-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
         .building-option {
             padding: 10px;
             margin: 5px 0;
             background-color: #f0f0f0;
             border-radius: 4px;
             cursor: pointer;
+            transition: all 0.2s;
         }
 
         .building-option:hover {
             background-color: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .stat-category {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #818181;
+            border-radius: 5px;
+        }
+
+        .stat-category h4 {
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .stat-category:last-child {
+            margin-bottom: 0;
+        }
+
+        .resource-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+        }
+
+        .resource-item {
+            padding: 8px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .resource-item.construction {
+            background-color: #e3f2fd;
+        }
+
+        .resource-item.material {
+            background-color: #fff8e1;
+        }
+
+        .resource-item.goods {
+            background-color: #e8f5e9;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+
+        .tab.active {
+            background-color: #fff;
+            border-bottom: 1px solid #fff;
+            margin-bottom: -1px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>UEconomy</h1>
+    <h1>UEconomy - Symulator ekonomiczny</h1>
 
     <div class="controls">
         <div>
@@ -161,71 +276,100 @@
             <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
         </div>
         <div class="speed-control">
-            <label for="speedRange">Speed:</label>
+            <label for="speedRange">Prędkość:</label>
             <input type="range" id="speedRange" min="1" max="10" value="1">
             <span id="speedValue">1x</span>
         </div>
         <div>
-            Day: <span id="currentDay">1</span>
+            <strong>Dzień:</strong> <span id="currentDay">1</span>
         </div>
     </div>
 
     <div class="dashboard">
         <div class="sidebar">
-            <h2>Statistics</h2>
+            <h2>Statystyki globalne</h2>
             <div id="globalStats">
-                <p>Total Population: <span id="totalPop">0</span></p>
-                <p>Total Food: <span id="totalFood">0</span></p>
-                <p>Total Products: <span id="totalProducts">0</span></p>
-                <p>Total Resources: <span id="totalResources">0</span></p>
+                <div class="stat-category">
+                    <h4>Populacja</h4>
+                    <div class="stat-item">
+                        <span>Łączna populacja:</span>
+                        <span id="totalPop">0</span>
+                    </div>
+                </div>
+
+                <div class="stat-category">
+                    <h4>Zasoby</h4>
+                    <div class="stat-item">
+                        <span>Materiały:</span>
+                        <span id="totalMaterials">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Dobra konsumpcyjne:</span>
+                        <span id="totalGoods">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Materiały budowlane:</span>
+                        <span id="totalConstruction">0</span>
+                    </div>
+                </div>
+
+                <div class="stat-category">
+                    <h4>Budynki</h4>
+                    <div class="stat-item">
+                        <span>Łączna liczba:</span>
+                        <span id="totalBuildings">0</span>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="main-content">
-            <h2>Provinces</h2>
-            <div id="provinces" class="provinces">
-                <!-- Provinces will be dynamically populated here -->
+            <div class="tabs">
+                <div class="tab active" data-tab="provinces">Prowincje</div>
+                <div class="tab" data-tab="selected-province">Wybrana prowincja</div>
+                <div class="tab" data-tab="buildings">Budynki</div>
+                <div class="tab" data-tab="market">Rynek</div>
             </div>
 
-            <h2>Selected Province</h2>
-            <div id="selectedProvince">
-                <p>No province selected</p>
+            <div class="tab-content active" id="provinces-tab">
+                <h2>Prowincje</h2>
+                <div id="provinces" class="provinces">
+                    <!-- Prowincje będą dynamicznie uzupełniane tutaj -->
+                    <p>Ładowanie prowincji...</p>
+                </div>
             </div>
 
-            <h2>Buildings</h2>
-            <button id="buildBtn" class="btn btn-primary">Build New</button>
-            <div id="buildings" class="buildings">
-                <!-- Buildings will be dynamically populated here -->
+            <div class="tab-content" id="selected-province-tab">
+                <h2>Wybrana prowincja</h2>
+                <div id="selectedProvince">
+                    <p>Nie wybrano prowincji</p>
+                </div>
+            </div>
+
+            <div class="tab-content" id="buildings-tab">
+                <h2>Budynki</h2>
+                <button id="buildBtn" class="btn btn-primary">Wybuduj nowy</button>
+                <div id="buildings" class="buildings">
+                    <p>Wybierz prowincję, aby zobaczyć budynki</p>
+                </div>
+            </div>
+
+            <div class="tab-content" id="market-tab">
+                <h2>Rynek prowincji</h2>
+                <div id="marketStats">
+                    <p>Wybierz prowincję, aby zobaczyć rynek</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Build Modal -->
+    <!-- Modal do budowania -->
     <div id="buildModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>Select Building Type</h2>
-            <div id="buildingOptions">
-                <div class="building-option" data-type="Workshop">
-                    <h3>Workshop</h3>
-                    <p>Produces tools</p>
-                    <p>Cost: 500 Wood, 200 Iron</p>
-                </div>
-                <div class="building-option" data-type="TextileMill">
-                    <h3>Textile Mill</h3>
-                    <p>Produces cloth</p>
-                    <p>Cost: 400 Wood, 100 Iron</p>
-                </div>
-                <div class="building-option" data-type="Glassworks">
-                    <h3>Glassworks</h3>
-                    <p>Produces glass</p>
-                    <p>Cost: 300 Wood, 100 Coal</p>
-                </div>
-                <div class="building-option" data-type="IronMine">
-                    <h3>Iron Mine</h3>
-                    <p>Produces iron</p>
-                    <p>Cost: 200 Wood, 100 Tools</p>
-                </div>
+            <h2>Wybierz typ budynku</h2>
+            <div id="buildingOptions" class="building-options">
+                <!-- Opcje budynków będą generowane dynamicznie -->
             </div>
         </div>
     </div>
@@ -233,217 +377,462 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
 <script>
-        // Variables
-        let currentProvinceId = null;
-        let connection = null;
+    // Zmienne
+    let currentProvinceId = null;
+    let connection = null;
+    let gameData = null;
 
-        // DOM Elements
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const speedRange = document.getElementById('speedRange');
-        const speedValue = document.getElementById('speedValue');
-        const currentDayEl = document.getElementById('currentDay');
-        const totalPopEl = document.getElementById('totalPop');
-        const totalFoodEl = document.getElementById('totalFood');
-        const totalProductsEl = document.getElementById('totalProducts');
-        const totalResourcesEl = document.getElementById('totalResources');
-        const provincesContainer = document.getElementById('provinces');
-        const selectedProvinceContainer = document.getElementById('selectedProvince');
-        const buildingsContainer = document.getElementById('buildings');
-        const buildBtn = document.getElementById('buildBtn');
-        const buildModal = document.getElementById('buildModal');
-        const closeModalBtn = document.querySelector('.close');
-        const buildingOptions = document.querySelectorAll('.building-option');
+    // Elementy DOM
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const speedRange = document.getElementById('speedRange');
+    const speedValue = document.getElementById('speedValue');
+    const currentDayEl = document.getElementById('currentDay');
+    const totalPopEl = document.getElementById('totalPop');
+    const totalMaterialsEl = document.getElementById('totalMaterials');
+    const totalGoodsEl = document.getElementById('totalGoods');
+    const totalConstructionEl = document.getElementById('totalConstruction');
+    const totalBuildingsEl = document.getElementById('totalBuildings');
+    const provincesContainer = document.getElementById('provinces');
+    const selectedProvinceContainer = document.getElementById('selectedProvince');
+    const buildingsContainer = document.getElementById('buildings');
+    const marketStatsContainer = document.getElementById('marketStats');
+    const buildBtn = document.getElementById('buildBtn');
+    const buildModal = document.getElementById('buildModal');
+    const closeModalBtn = document.querySelector('.close');
+    const buildingOptionsContainer = document.getElementById('buildingOptions');
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
 
-        // Initialize SignalR
-        function initSignalR() {
-            connection = new signalR.HubConnectionBuilder()
-                .withUrl("/gameHub")
-                .configureLogging(signalR.LogLevel.Information)
-                .build();
+    // Inicjalizacja SignalR
+    function initSignalR() {
+        connection = new signalR.HubConnectionBuilder()
+            .withUrl("/gameHub")
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
 
-            connection.on("ReceiveGameUpdate", (gameData) => {
-                console.log("Received game update:", gameData);
-                console.log(`Day: ${gameData.currentDay}, Provinces: ${gameData.countries[0].provinces.length}`);
-                updateUI(gameData);
-            });
+        connection.on("ReceiveGameUpdate", (data) => {
+            console.log("Otrzymano aktualizację gry:", data);
+            gameData = data;
+            updateUI(data);
+        });
 
-            connection.on("GameStarted", () => {
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-            });
+        connection.on("GameStarted", () => {
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+        });
 
-            connection.on("GameStopped", () => {
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-            });
+        connection.on("GameStopped", () => {
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        });
 
-            connection.on("SpeedChanged", (speed) => {
-                speedRange.value = speed;
-                speedValue.textContent = speed + 'x';
-            });
+        connection.on("SpeedChanged", (speed) => {
+            speedRange.value = speed;
+            speedValue.textContent = speed + 'x';
+        });
 
-            connection.start()
-                .then(() => {
-                    console.log("SignalR Connected");
-                    // Request initial game state
-                    connection.invoke("SendGameUpdate");
-                })
-                .catch((err) => console.error(err));
-        }
+        connection.start()
+            .then(() => {
+                console.log("SignalR połączony");
+                // Pobierz początkowy stan gry
+                connection.invoke("SendGameUpdate");
+            })
+            .catch((err) => console.error(err));
+    }
 
-        // Update UI with game data
-        function updateUI(gameData) {
-            // Update day
-            currentDayEl.textContent = gameData.currentDay;
+    // Aktualizacja UI z danymi gry
+    function updateUI(gameData) {
+        // Aktualizuj dzień
+        currentDayEl.textContent = gameData.currentDay;
 
-            // Update global stats
-            let totalPop = 0;
-            let totalFood = 0;
-            let totalProducts = 0;
-            let totalResources = 0;
+        // Resetuj statystyki globalne
+        let totalPop = 0;
+        let totalMaterials = 0;
+        let totalGoods = 0;
+        let totalConstruction = 0;
+        let totalBuildings = 0;
 
-            // Clear provinces container
-            provincesContainer.innerHTML = '';
+        // Wyczyść kontener prowincji
+        provincesContainer.innerHTML = '';
 
-            // Populate provinces
-            gameData.countries.forEach(country => {
-                country.provinces.forEach(province => {
-                    // Update stats
-                    totalPop += province.popCount;
+        // Uzupełnij prowincje
+        gameData.countries.forEach(country => {
+            country.provinces.forEach(province => {
+                // Aktualizuj statystyki
+                totalPop += province.popCount;
+                totalBuildings += province.buildings ? province.buildings.length : 0;
 
-                     selectedProvinceContainer.innerHTML = `
-                         <h3>${province.name}</h3>
-                         <p>Population: ${province.popCount}</p>
-                         <div class="market-stats">
-                             <h4>Market</h4>
-                             <p>Food: ${province.marketStats?.TotalFood || 0}</p>
-                             <p>Products: ${province.marketStats?.TotalProducts || 0}</p>
-                             <p>Resources: ${province.marketStats?.TotalResources || 0}</p>
-                         </div>
-                     `;
+                // Utworzenie karty prowincji
+                const provinceCard = document.createElement('div');
+                provinceCard.className = 'province-card';
+                if (currentProvinceId === province.id) {
+                    provinceCard.classList.add('active');
+                }
+                provinceCard.dataset.id = province.id;
+                provinceCard.innerHTML = `
+                    <h3>Prowincja ${province.name}</h3>
+                    <p>Populacja: ${province.popCount}</p>
+                    <p>Budynki: ${province.buildings ? province.buildings.length : 0}</p>
+                `;
 
-                    // Create province card
-                    const provinceCard = document.createElement('div');
-                    provinceCard.className = 'province-card';
-                    provinceCard.dataset.id = province.id;
-                    provinceCard.innerHTML = `
-                        <h3>${province.name}</h3>
-                        <p>Population: ${province.popCount}</p>
-                        <p>Buildings: ${province.buildings ? province.buildings.length : 0}</p>
-                    `;
+                provinceCard.addEventListener('click', () => {
+                    selectProvince(province);
 
-                    provinceCard.addEventListener('click', () => {
-                        selectProvince(province);
+                    // Odznacz wszystkie inne karty
+                    document.querySelectorAll('.province-card').forEach(card => {
+                        card.classList.remove('active');
                     });
 
-                    provincesContainer.appendChild(provinceCard);
+                    // Oznacz wybraną kartę
+                    provinceCard.classList.add('active');
 
-                    // If this is the currently selected province, update its detailed view
-                    if (currentProvinceId === province.id) {
-                        selectProvince(province);
-                    }
+                    // Przełącz na zakładkę wybranej prowincji
+                    switchTab('selected-province');
                 });
-            });
 
-            // Update global stats display
-            totalPopEl.textContent = totalPop;
-            totalFoodEl.textContent = totalFood;
-            totalProductsEl.textContent = totalProducts;
-            totalResourcesEl.textContent = totalResources;
-        }
+                provincesContainer.appendChild(provinceCard);
 
-        // Select a province to display details
-        function selectProvince(province) {
-            currentProvinceId = province.id;
+                // Aktualizuj statystyki rynku
+                if (province.marketStats) {
+                    // Podsumuj kategorie
+                    Object.entries(province.marketStats).forEach(([key, value]) => {
+                        if (key.startsWith('Total')) {
+                            if (key === 'TotalMaterials') totalMaterials += value;
+                            if (key === 'TotalGoods') totalGoods += value;
+                            if (key === 'TotalConstruction') totalConstruction += value;
+                        }
+                    });
+                }
 
-            // Update selected province display
-            selectedProvinceContainer.innerHTML = `
-                <h3>${province.name}</h3>
-                <p>Population: ${province.popCount}</p>
-                <div class="market-stats">
-                    <h4>Market</h4>
-                    <p>Food: ${province.marketStats?.totalFood || 0}</p>
-                    <p>Products: ${province.marketStats?.totalProducts || 0}</p>
-                    <p>Resources: ${province.marketStats?.totalResources || 0}</p>
-                </div>
-            `;
-
-            // Update buildings display
-            buildingsContainer.innerHTML = '';
-
-            if (province.buildings && province.buildings.length > 0) {
-                province.buildings.forEach(building => {
-                    const buildingCard = document.createElement('div');
-                    buildingCard.className = 'building-card';
-                    buildingCard.innerHTML = `
-                        <h4>${building.type}</h4>
-                        <p>Level: ${building.level}</p>
-                        <p>Employees: ${building.currentEmployees}/${building.maxEmployees}</p>
-                    `;
-                    buildingsContainer.appendChild(buildingCard);
-                });
-            } else {
-                buildingsContainer.innerHTML = '<p>No buildings in this province</p>';
-            }
-        }
-
-        // Event Listeners
-        startBtn.addEventListener('click', () => {
-            console.log("Calling StartGame from client");
-            connection.invoke("StartGame")
-                .then(() => console.log("StartGame successfully called"))
-                .catch(err => console.error("Failed to call StartGame:", err));
-        });
-
-        stopBtn.addEventListener('click', () => {
-            connection.invoke("StopGame");
-        });
-
-        speedRange.addEventListener('input', () => {
-            const speed = parseInt(speedRange.value);
-            speedValue.textContent = speed + 'x';
-            connection.invoke("SetSpeed", speed);
-        });
-
-        buildBtn.addEventListener('click', () => {
-            // Only show the modal if a province is selected
-            if (currentProvinceId) {
-                buildModal.style.display = 'block';
-            } else {
-                alert('Please select a province first');
-            }
-        });
-
-        closeModalBtn.addEventListener('click', () => {
-            buildModal.style.display = 'none';
-        });
-
-        // Close modal on outside click
-        window.addEventListener('click', (event) => {
-            if (event.target === buildModal) {
-                buildModal.style.display = 'none';
-            }
-        });
-
-        buildingOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                const buildingType = option.dataset.type;
-
-                if (currentProvinceId) {
-                    connection.invoke("ConstructBuilding", currentProvinceId, buildingType)
-                        .then(() => {
-                            buildModal.style.display = 'none';
-                        })
-                        .catch(err => console.error(err));
+                // Jeśli to aktualnie wybrana prowincja, zaktualizuj jej szczegółowy widok
+                if (currentProvinceId === province.id) {
+                    selectProvince(province);
                 }
             });
         });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            initSignalR();
+        // Aktualizuj wyświetlanie statystyk globalnych
+        totalPopEl.textContent = totalPop.toLocaleString();
+        totalMaterialsEl.textContent = totalMaterials.toLocaleString();
+        totalGoodsEl.textContent = totalGoods.toLocaleString();
+        totalConstructionEl.textContent = totalConstruction.toLocaleString();
+        totalBuildingsEl.textContent = totalBuildings.toLocaleString();
+
+        // Zaktualizuj opcje budowania
+        generateBuildingOptions();
+    }
+
+    // Wybór prowincji
+    function selectProvince(province) {
+        currentProvinceId = province.id;
+
+        // Zaktualizuj wyświetlanie wybranej prowincji
+        selectedProvinceContainer.innerHTML = `
+            <h3>Prowincja ${province.name}</h3>
+            <p>Populacja: ${province.popCount}</p>
+            <div class="stat-category">
+                <h4>Statystyki</h4>
+                <div class="stat-item">
+                    <span>Liczba budynków:</span>
+                    <span>${province.buildings ? province.buildings.length : 0}</span>
+                </div>
+            </div>
+        `;
+
+        // Zaktualizuj wyświetlanie budynków
+        buildingsContainer.innerHTML = '';
+
+        if (province.buildings && province.buildings.length > 0) {
+            province.buildings.forEach(building => {
+                const buildingCard = document.createElement('div');
+                buildingCard.className = 'building-card';
+                buildingCard.innerHTML = `
+                    <h4>${building.id}</h4>
+                    <p>Poziom: ${building.level}</p>
+                    <p>Pracownicy: ${building.currentEmployees}/${building.maxEmployees * building.level}</p>
+                `;
+                buildingsContainer.appendChild(buildingCard);
+            });
+        } else {
+            buildingsContainer.innerHTML = '<p>Brak budynków w tej prowincji</p>';
+        }
+
+        // Zaktualizuj rynek prowincji
+        updateMarketStats(province);
+    }
+
+    // Aktualizacja statystyk rynku dla prowincji
+    function updateMarketStats(province) {
+        if (!province.marketStats) {
+            marketStatsContainer.innerHTML = '<p>Brak danych o rynku</p>';
+            return;
+        }
+
+        // Grupuj według kategorii
+        const resourcesByCategory = {
+            construction: [],
+            material: [],
+            goods: []
+        };
+
+        // Sprawdź, czy mamy dostęp do szczegółowych statystyk
+        if (province.marketStats.DetailedStats) {
+            // Nowy format danych z kategorią
+            Object.entries(province.marketStats.DetailedStats).forEach(([id, details]) => {
+                const category = details.Category || 'unknown';
+
+                if (!resourcesByCategory[category]) {
+                    resourcesByCategory[category] = [];
+                }
+
+                resourcesByCategory[category].push({
+                    id: id,
+                    amount: details.Amount,
+                    price: details.Price
+                });
+            });
+        } else {
+            console.log("province123: ", province)
+            // Domyślny sposób grupowania (bez szczegółów z kategorią)
+            Object.entries(province.marketStats).forEach(([id, stats]) => {
+                if (id !== 'CategoryTotals' && id !== 'DetailedStats') {
+                    console.log("Statystyki zasobów:", stats);
+                    const amount = stats[0].Amount;
+                    const price = stats[0].Price;
+
+                    // Próba określenia kategorii na podstawie nazwy
+                    let category = 'unknown';
+                    if (['tool', 'glass', 'plank'].includes(id)) {
+                        category = 'construction';
+                    } else if (['cloth', 'wood', 'cooper', 'iron', 'coal'].includes(id)) {
+                        category = 'material';
+                    } else if (['furniture', 'wheat', 'rice', 'maize'].includes(id)) {
+                        category = 'goods';
+                    }
+
+                    if (!resourcesByCategory[category]) {
+                        resourcesByCategory[category] = [];
+                    }
+
+                    resourcesByCategory[category].push({
+                        id: id,
+                        amount: amount,
+                        price: price
+                    });
+                }
+            });
+        }
+
+        // Wygeneruj HTML dla rynku
+        marketStatsContainer.innerHTML = '';
+
+        // Dodaj podsumowanie kategorii, jeśli dostępne
+        if (province.marketStats.CategoryTotals) {
+            const categoryTotals = document.createElement('div');
+            categoryTotals.className = 'stat-category';
+            categoryTotals.innerHTML = '<h4>Podsumowanie kategorii</h4>';
+
+            Object.entries(province.marketStats.CategoryTotals).forEach(([category, total]) => {
+                categoryTotals.innerHTML += `
+                    <div class="stat-item">
+                        <span>${capitalizeFirstLetter(category)}:</span>
+                        <span>${total.toLocaleString()}</span>
+                    </div>
+                `;
+            });
+
+            marketStatsContainer.appendChild(categoryTotals);
+        }
+
+        // Dodaj sekcje dla każdej kategorii zasobów
+        Object.entries(resourcesByCategory).forEach(([category, resources]) => {
+            if (resources.length > 0) {
+                const categorySection = document.createElement('div');
+                categorySection.className = 'stat-category';
+                categorySection.innerHTML = `<h4>${capitalizeFirstLetter(category)}</h4>`;
+
+                const resourceList = document.createElement('div');
+                resourceList.className = 'resource-list';
+
+                resources.forEach(resource => {
+                    resourceList.innerHTML += `
+                        <div class="resource-item ${category}">
+                            <span>${capitalizeFirstLetter(resource.id)}:</span>
+                            <span>${resource.amount.toLocaleString()} (${resource.price.toFixed(2)})</span>
+                        </div>
+                    `;
+                });
+
+                categorySection.appendChild(resourceList);
+                marketStatsContainer.appendChild(categorySection);
+            }
         });
-    </script>
+    }
+
+    // Pomocnicza funkcja do kapitalizacji pierwszej litery
+    function capitalizeFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    // Generowanie opcji budynków
+    function generateBuildingOptions() {
+        buildingOptionsContainer.innerHTML = '';
+
+        // Budynki produkcyjne
+        const productionBuildings = [
+            { type: 'Workshop', name: 'Warsztat', desc: 'Produkuje narzędzia', inputs: 'Drewno', outputs: 'Narzędzia' },
+            { type: 'TextileMill', name: 'Fabryka włókiennicza', desc: 'Produkuje tkaniny', inputs: 'Drewno', outputs: 'Tkaniny' },
+            { type: 'LumberMill', name: 'Tartak', desc: 'Produkuje deski', inputs: 'Drewno', outputs: 'Deski' },
+            { type: 'FurnitureFactory', name: 'Fabryka mebli', desc: 'Produkuje meble', inputs: 'Drewno, Deski', outputs: 'Meble' },
+            { type: 'Glassworks', name: 'Huta szkła', desc: 'Produkuje szkło', inputs: 'Drewno, Węgiel', outputs: 'Szkło' }
+        ];
+
+        // Farmy
+        const farms = [
+            { type: 'WheatFarm', name: 'Farma pszenicy', desc: 'Produkuje pszenicę', inputs: '-', outputs: 'Pszenica' },
+            { type: 'RiceFarm', name: 'Farma ryżu', desc: 'Produkuje ryż', inputs: '-', outputs: 'Ryż' },
+            { type: 'MaizeFarm', name: 'Farma kukurydzy', desc: 'Produkuje kukurydzę', inputs: '-', outputs: 'Kukurydza' }
+        ];
+
+        // Kopalnie i wydobycie
+        const mines = [
+            { type: 'IronMine', name: 'Kopalnia żelaza', desc: 'Wydobywa żelazo', inputs: 'Narzędzia', outputs: 'Żelazo' },
+            { type: 'CoalMine', name: 'Kopalnia węgla', desc: 'Wydobywa węgiel', inputs: 'Narzędzia', outputs: 'Węgiel' },
+            { type: 'LoggingCamp', name: 'Obóz drwali', desc: 'Pozyskuje drewno', inputs: 'Narzędzia', outputs: 'Drewno' }
+        ];
+
+        // Dodaj nagłówek dla budynków produkcyjnych
+        const productionHeader = document.createElement('h3');
+        productionHeader.textContent = 'Budynki produkcyjne';
+        productionHeader.style.gridColumn = '1 / -1';
+        productionHeader.style.borderBottom = '1px solid #ddd';
+        productionHeader.style.marginTop = '15px';
+        buildingOptionsContainer.appendChild(productionHeader);
+
+        // Dodaj budynki produkcyjne
+        productionBuildings.forEach(building => {
+            addBuildingOption(building);
+        });
+
+        // Dodaj nagłówek dla farm
+        const farmsHeader = document.createElement('h3');
+        farmsHeader.textContent = 'Farmy';
+        farmsHeader.style.gridColumn = '1 / -1';
+        farmsHeader.style.borderBottom = '1px solid #ddd';
+        farmsHeader.style.marginTop = '15px';
+        buildingOptionsContainer.appendChild(farmsHeader);
+
+        // Dodaj farmy
+        farms.forEach(building => {
+            addBuildingOption(building);
+        });
+
+        // Dodaj nagłówek dla kopalni
+        const minesHeader = document.createElement('h3');
+        minesHeader.textContent = 'Kopalnie i wydobycie';
+        minesHeader.style.gridColumn = '1 / -1';
+        minesHeader.style.borderBottom = '1px solid #ddd';
+        minesHeader.style.marginTop = '15px';
+        buildingOptionsContainer.appendChild(minesHeader);
+
+        // Dodaj kopalnie
+        mines.forEach(building => {
+            addBuildingOption(building);
+        });
+    }
+
+    // Pomocnicza funkcja do dodawania opcji budynku
+    function addBuildingOption(building) {
+        const option = document.createElement('div');
+        option.className = 'building-option';
+        option.dataset.type = building.type;
+        option.innerHTML = `
+            <h4>${building.name}</h4>
+            <p>${building.desc}</p>
+            <p><strong>Wejście:</strong> ${building.inputs}</p>
+            <p><strong>Wyjście:</strong> ${building.outputs}</p>
+        `;
+
+        option.addEventListener('click', () => {
+            if (currentProvinceId) {
+                connection.invoke("ConstructBuilding", currentProvinceId, building.type)
+                    .then(() => {
+                        buildModal.style.display = 'none';
+                    })
+                    .catch(err => console.error(err));
+            }
+        });
+
+        buildingOptionsContainer.appendChild(option);
+    }
+
+    // Przełączanie zakładek
+    function switchTab(tabId) {
+        tabs.forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.dataset.tab === tabId) {
+                tab.classList.add('active');
+            }
+        });
+
+        tabContents.forEach(content => {
+            content.classList.remove('active');
+        });
+
+        document.getElementById(`${tabId}-tab`).classList.add('active');
+    }
+
+    // Event Listeners
+    startBtn.addEventListener('click', () => {
+        console.log("Wywołanie StartGame z klienta");
+        connection.invoke("StartGame")
+            .then(() => console.log("StartGame pomyślnie wywołane"))
+            .catch(err => console.error("Nie udało się wywołać StartGame:", err));
+    });
+
+    stopBtn.addEventListener('click', () => {
+        connection.invoke("StopGame");
+    });
+
+    speedRange.addEventListener('input', () => {
+        const speed = parseInt(speedRange.value);
+        speedValue.textContent = speed + 'x';
+        connection.invoke("SetSpeed", speed);
+    });
+
+    buildBtn.addEventListener('click', () => {
+        // Pokaż modal tylko jeśli prowincja jest wybrana
+        if (currentProvinceId) {
+            buildModal.style.display = 'block';
+        } else {
+            alert('Najpierw wybierz prowincję');
+        }
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+        buildModal.style.display = 'none';
+    });
+
+    // Zamknij modal po kliknięciu poza nim
+    window.addEventListener('click', (event) => {
+        if (event.target === buildModal) {
+            buildModal.style.display = 'none';
+        }
+    });
+
+    // Obsługa zakładek
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            switchTab(tab.dataset.tab);
+        });
+    });
+
+    // Inicjalizacja
+    document.addEventListener('DOMContentLoaded', () => {
+        initSignalR();
+        generateBuildingOptions();
+    });
+</script>
 </body>
 </html>

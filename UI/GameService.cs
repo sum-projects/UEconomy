@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using UEconomy.Engine;
-
-namespace UI;
+using UI;
 
 public class GameService
 {
     private Game game;
-    private bool isRunning = false;
+    private bool isRunning;
     private int speedMultiplier = 1;
     private Timer? gameTimer;
+    private int currentDay = 1;
 
     private readonly IHubContext<GameHub> HubContext;
 
@@ -21,16 +21,15 @@ public class GameService
 
     public Game GetGame() => game;
 
+    public int GetCurrentDay() => currentDay;
+
     public void StartGame()
     {
-        Console.WriteLine("StartGame called in GameService");
         if (isRunning)
         {
-            Console.WriteLine("Game already running, ignoring start request");
             return;
         }
 
-        Console.WriteLine("Starting game simulation");
         isRunning = true;
         gameTimer = new Timer(UpdateGame, null, 0, 1000 / speedMultiplier);
     }
@@ -51,33 +50,72 @@ public class GameService
         gameTimer = new Timer(UpdateGame, null, 0, 1000 / speedMultiplier);
     }
 
-    public int GetSpeed() => speedMultiplier;
-
     private void UpdateGame(object? state)
     {
-        Console.WriteLine($"Updating game to day: {game.GetCurrentDay() + 1}");
         game.Update();
-        Console.WriteLine($"Game updated to day: {game.GetCurrentDay()}");
+        currentDay++;
 
+        SendGameUpdateToClients();
+    }
+
+    private void SendGameUpdateToClients()
+    {
         var gameData = new
         {
-            CurrentDay = game.GetCurrentDay(),
-            Countries = game.GetCountries().Select(c => new
+            CurrentDay = currentDay,
+            Countries = game.Countries.Select(c => new
             {
-                Id = c.GetId(),
-                Name = c.GetName(),
-                Provinces = c.GetProvinces().Select(p => new
+                Id = c.Id,
+                Provinces = c.Provinces.Select(p => new
                 {
-                    Id = p.GetId(),
-                    Name = p.GetName(),
-                    PopCount = p.GetPopCount(),
+                    Id = p.Id,
+                    Name = p.Id, // Używamy Id jako nazwy
+                    PopCount = p.Population,
                     Buildings = p.GetAllBuildings(),
-                    MarketStats = p.GetMarketStatistics()
+                    MarketStats = GetMarketStats(p.LocalMarket)
                 })
             })
         };
 
         HubContext.Clients.All.SendAsync("ReceiveGameUpdate", gameData);
+    }
+
+    private object GetMarketStats(Market market)
+    {
+        var marketStats = market.GetMarketStatistics();
+
+        var categoryTotals = new Dictionary<string, double>();
+
+        foreach (var item in marketStats)
+        {
+            var stuffInfo = GetStuffInfo(item.Key);
+            var category = stuffInfo?.Category ?? "unknown";
+            var amount = item.Value[0]["Amount"];
+
+            categoryTotals.TryAdd(category, 0);
+
+            categoryTotals[category] += amount;
+        }
+
+        var detailedStats = marketStats.ToDictionary(
+            kvp => kvp.Key,
+            kvp => new {
+                Amount = kvp.Value[0]["Amount"],
+                Price = kvp.Value[0]["Price"],
+                Category = GetStuffInfo(kvp.Key)?.Category ?? "unknown"
+            }
+        );
+
+        return new {
+            CategoryTotals = categoryTotals,
+            DetailedStats = detailedStats
+        };
+    }
+
+    private StuffStruct? GetStuffInfo(string stuffId)
+    {
+        var allStuff = LoaderConfig.GetStuff();
+        return allStuff.FirstOrDefault(s => s.Id == stuffId);
     }
 
     public void ConstructBuilding(string provinceId, string buildingId)
@@ -86,106 +124,40 @@ public class GameService
         if (province == null) return;
 
         var buildingStruct = game.GetBuildingStruct(buildingId);
-        if (buildingStruct == null) return;
 
+        var inputStorage = new BuildingStorage();
+        var outputStorage = new BuildingStorage();
 
-        switch (buildingType)
+        var inputStuff = new List<Dictionary<string, int>>();
+        var outputStuff = new List<Dictionary<string, int>>();
+
+        if (buildingStruct.ProductionTypes.TryGetValue("level0", out var type))
         {
-            case "Workshop":
-                province.Add
-                var workshop = new Workshop(
-                    GetNextBuildingId(), level, 0,
-                    new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },
-                    new List<Stuff<StuffType>> { }
-                );
-                province.AddFactory(workshop);
-                break;
-            case "TextileMill":
-                var textileMill = new TextileMill(
-                    GetNextBuildingId(), level, 0,
-                    new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },
-                    new List<Stuff<StuffType>> { }
-                );
-                province.AddFactory(textileMill);
-                break;
-            case "LumberMill":
-                var lumberMill = new LumberMill(
-                    GetNextBuildingId(), level, 0,
-                    new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },
-                    new List<Stuff<StuffType>> { }
-                );
-                province.AddFactory(lumberMill);
-                break;
-            case "FurnitureFactory":
-                var furnitureFactory = new FurnitureFactory(
-                    GetNextBuildingId(), level, 0,
-                    new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },
-                    new List<Stuff<StuffType>> { }
-                );
-                province.AddFactory(furnitureFactory);
-                break;
-            case "Glassworks":
-                var glassworks = new Glassworks(
-                    GetNextBuildingId(), level, 0,
-                    new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },
-                    new List<Stuff<StuffType>> { }
-                );
-                province.AddFactory(glassworks);
-                break;
-            case "WheatFarm":
-                var wheatFarm = new WheatFarm(
-                    GetNextBuildingId(), level, 0,
-                    new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },
-                    new List<Stuff<StuffType>> { }
-                );
-                province.AddFarm(wheatFarm);
-                break;
-            case "RiceFarm":
-                var riceFarm = new RiceFarm(
-                    GetNextBuildingId(), level, 0,
-                    new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },
-                    new List<Stuff<StuffType>> { }
-                );
-                province.AddFarm(riceFarm);
-                break;
-            case "MaizeFarm":
-                var maizeFarm = new MaizeFarm(
-                    GetNextBuildingId(), level, 0,
-                    new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },
-                    new List<Stuff<StuffType>> { }
-                );
-                province.AddFarm(maizeFarm);
-                break;
-            case "IronMine":
-                var ironMine = new IronMine(
-                    GetNextBuildingId(), level, 0,
-                    new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },
-                    new List<Stuff<StuffType>> { }
-                );
-                province.AddMine(ironMine);
-                break;
-            case "CoalMine":
-                var coalMine = new CoalMine(
-                    GetNextBuildingId(), level, 0,
-                    new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },
-                    new List<Stuff<StuffType>> { }
-                );
-                province.AddMine(coalMine);
-                break;
-            case "LoggingCamp":
-                var loggingCamp = new LoggingCamp(
-                    GetNextBuildingId(), level, 0,
-                    new List<Stuff<ResourceType>> { new(ResourceType.Wood, 10), new(ResourceType.Iron, 5) },
-                    new List<Stuff<StuffType>> { }
-                );
-                province.AddMine(loggingCamp);
-                break;
-
+            inputStuff.Add(type.Input);
+            outputStuff.Add(type.Output);
         }
-    }
 
-    private int GetNextBuildingId()
-    {
-        return new Random().Next(1000, 9999);
+        var level = 1;
+        var currentEmployees = 0;
+
+        var prodMethod = buildingStruct.ProductionMethods["level0"];
+        var maxEmployeesPerLevel = prodMethod.EmployeesNeeded;
+        var outputMultiplayer = prodMethod.OutputMultiplier;
+
+        var building = new Building(
+            buildingId,
+            level,
+            outputMultiplayer,
+            maxEmployeesPerLevel,
+            currentEmployees,
+            inputStuff,
+            outputStuff,
+            inputStorage,
+            outputStorage
+        );
+
+        province.AddBuilding(building);
+
+        SendGameUpdateToClients();
     }
 }

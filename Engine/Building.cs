@@ -9,7 +9,7 @@ public class Building
 {
     public string Id { get; }
     public int Level { get; }
-    public int BasicOutputPerLevel { get; }
+    public int OutputMultiplayer { get; }
     public int MaxEmployeesPerLevel { get; }
     public int CurrentEmployees { get; }
 
@@ -22,7 +22,7 @@ public class Building
     public Building(
         string id,
         int level,
-        int basicOutputPerLevel,
+        int outputMultiplayer,
         int maxEmployeesPerLevel,
         int currentEmployees,
         List<Dictionary<string, int>> inputStuff,
@@ -33,7 +33,7 @@ public class Building
     {
         Id = id;
         Level = level;
-        BasicOutputPerLevel = basicOutputPerLevel;
+        OutputMultiplayer = outputMultiplayer;
         MaxEmployeesPerLevel = maxEmployeesPerLevel;
         CurrentEmployees = currentEmployees;
 
@@ -46,101 +46,92 @@ public class Building
 
     public void Work()
     {
+        var maxEmployees = MaxEmployeesPerLevel * Level;
+        var employeeEfficiency = maxEmployees > 0 ? Math.Min((double)CurrentEmployees / maxEmployees, 1.0) : 0.0;
+        if (employeeEfficiency <= 0.0)
+        {
+            return;
+        }
 
+        var resourceEfficiency = 1.0;
+        if (InputStuff.Count > 0)
+        {
+            var totalResourcePercentage = 0.0;
+
+            foreach (var neededResourcesDict in InputStuff)
+            {
+                foreach (var (resourceId, neededAmount) in neededResourcesDict)
+                {
+                    var availableAmount = 0;
+                    if (InputStorage.Items.TryGetValue(resourceId, out var item))
+                    {
+                        availableAmount = item;
+                    }
+
+                    totalResourcePercentage += Math.Min(1.0, (double)availableAmount / neededAmount);
+                }
+            }
+
+            resourceEfficiency = InputStuff.Count > 0 ? totalResourcePercentage / InputStuff.Count : 1.0;
+        }
+
+        var totalEfficiency = Math.Min(employeeEfficiency, resourceEfficiency);
+
+        if (totalEfficiency <= 0.0)
+        {
+            return;
+        }
+
+        var baseOutput = Level * OutputMultiplayer;
+        var actualOutput = (int)(baseOutput * totalEfficiency);
+
+        if (actualOutput <= 0)
+        {
+            return;
+        }
+
+        ConsumeInputs(actualOutput);
+        ProduceOutputs(actualOutput);
     }
 
-    // public void BuyNeeds(
-    //     List<Stuff<ResourceType>> resources,
-    //     List<Stuff<StuffType>> products
-    // )
-    // {
-    //     foreach (var resource in resources)
-    //     {
-    //         resourceStorage.Store(resource);
-    //     }
-    //
-    //     foreach (var product in products)
-    //     {
-    //         productStorage.Store(product);
-    //     }
-    // }
-    //
-    // public Stuff<T> TakeOutput(T type, int amount)
-    // {
-    //     return outputStorage.TryTake(type, amount, out var output) ? output : new Stuff<T>(type, 0);
-    // }
-    //
-    // public abstract Stuff<T> Work();
-    //
-    // protected double CalculateOutputValue()
-    // {
-    //     var baseOutput = this.level * this.basicOutputPerLevel;
-    //     var maxEmployees = this.maxEmployeesPerLevel * this.level;
-    //
-    //     var employeeEfficiency = maxEmployees > 0 ? Math.Min((double)currentEmployees / maxEmployees, 1.0) : 0.0;
-    //
-    //     if (employeeEfficiency <= 0.0)
-    //     {
-    //         return 0;
-    //     }
-    //
-    //     var resourceEfficiency = 1.0;
-    //     if (neededResources.Count > 0)
-    //     {
-    //         var totalResourcePercentage = (
-    //             from neededResource
-    //                 in neededResources
-    //             let availableAmount = resourceStorage.GetAvailableAmount(neededResource.Type)
-    //             select Math.Min(1.0, (double)availableAmount / neededResource.Amount)
-    //         ).Sum();
-    //
-    //         resourceEfficiency = totalResourcePercentage / neededResources.Count;
-    //     }
-    //
-    //
-    //     var productEfficiency = 1.0;
-    //     if (neededProducts.Count > 0)
-    //     {
-    //         var totalProductPercentage = (
-    //             from neededProduct
-    //                 in neededProducts
-    //             let availableAmount = productStorage.GetAvailableAmount(neededProduct.Type)
-    //             select Math.Min(1.0, (double)availableAmount / neededProduct.Amount)
-    //         ).Sum();
-    //
-    //         productEfficiency = totalProductPercentage / neededProducts.Count;
-    //     }
-    //
-    //     var totalEfficiency = Math.Min(employeeEfficiency, Math.Min(resourceEfficiency, productEfficiency));
-    //
-    //     return baseOutput * totalEfficiency;
-    // }
-    //
-    // protected void ConsumeNeeds()
-    // {
-    //     foreach (var resource in neededResources)
-    //     {
-    //         resourceStorage.TryTake(resource.Type, resource.Amount, out _);
-    //     }
-    //
-    //     foreach (var product in neededProducts)
-    //     {
-    //         productStorage.TryTake(product.Type, product.Amount, out _);
-    //     }
-    // }
-    //
-    // public int GetLevel()
-    // {
-    //     return level;
-    // }
-    //
-    // public int GetCurrentEmployees()
-    // {
-    //     return currentEmployees;
-    // }
-    //
-    // public int GetMaxEmployees()
-    // {
-    //     return maxEmployeesPerLevel * level;
-    // }
+    private void ConsumeInputs(int outputMultiplier)
+    {
+        if (InputStuff.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var inputDict in InputStuff)
+        {
+            foreach (var (resourceId, value) in inputDict)
+            {
+                var amountNeeded = value * outputMultiplier;
+
+                if (InputStorage.Items.ContainsKey(resourceId) && InputStorage.Items[resourceId] >= amountNeeded)
+                {
+                    InputStorage.Items[resourceId] -= amountNeeded;
+                }
+            }
+        }
+    }
+
+    private void ProduceOutputs(int outputMultiplier)
+    {
+        if (OutputStuff.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var outputDict in OutputStuff)
+        {
+            foreach (var (resourceId, value) in outputDict)
+            {
+                var amountProduced = value * outputMultiplier;
+
+                OutputStorage.Items.TryAdd(resourceId, 0);
+
+                OutputStorage.Items[resourceId] += amountProduced;
+            }
+        }
+    }
 }
