@@ -44,6 +44,70 @@ public class Building
         OutputStorage = outputStorage;
     }
 
+    // Metoda do obliczania potrzeb produkcyjnych budynku
+    public Dictionary<string, int> CalculateNeeds()
+    {
+        var needs = new Dictionary<string, int>();
+
+        // Jeśli nie ma pracowników, budynek nie ma potrzeb
+        if (CurrentEmployees <= 0)
+        {
+            return needs;
+        }
+
+        // Jeśli nie ma surowców wejściowych, zwróć puste słownik
+        if (InputStuff.Count == 0)
+        {
+            return needs;
+        }
+
+        // Współczynnik produkcji zależny od liczby pracowników
+        var maxEmployees = MaxEmployeesPerLevel * Level;
+        var employeeEfficiency = maxEmployees > 0 ? Math.Min((double)CurrentEmployees / maxEmployees, 1.0) : 0.0;
+
+        // Jeśli efektywność załogi jest niska, bądź brak pracowników, budynek nie ma potrzeb
+        if (employeeEfficiency <= 0.1)
+        {
+            return needs;
+        }
+
+        // Dla każdego typu surowca wejściowego
+        foreach (var inputDict in InputStuff)
+        {
+            foreach (var (resourceId, baseAmount) in inputDict)
+            {
+                // Sprawdź, ile mamy obecnie w magazynie
+                var currentAmount = 0;
+                InputStorage.Items.TryGetValue(resourceId, out currentAmount);
+
+                // Oblicz potrzebę jako różnicę między maksymalną potrzebą a tym, co już mamy
+                // Ilość zależna od poziomu budynku, współczynnika produkcji i wydajności pracowników
+                var maxNeeded = baseAmount * Level * OutputMultiplayer;
+                var actualNeeded = (int)(maxNeeded * employeeEfficiency);
+
+
+                // Potrzebujemy tylko tyle, ile brakuje do wypełnienia magazynu
+                var neededAmount = Math.Max(0, actualNeeded - currentAmount);
+
+
+                // Jeśli jest potrzeba, dodaj do listy potrzeb
+                if (neededAmount > 0)
+                {
+                    if (needs.ContainsKey(resourceId))
+                    {
+                        needs[resourceId] += neededAmount;
+                    }
+                    else
+                    {
+                        needs[resourceId] = neededAmount;
+                    }
+                }
+            }
+        }
+
+        return needs;
+    }
+
     public void Work()
     {
         var maxEmployees = MaxEmployeesPerLevel * Level;
