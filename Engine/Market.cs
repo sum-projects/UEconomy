@@ -19,16 +19,11 @@ public struct MarketStuff
 
 public class MarketStorage
 {
-    public List<MarketStuff> Items { get; } = new();
+    public List<MarketStuff> Items { get; }
 
-    public void Store()
+    public MarketStorage(List<MarketStuff> items)
     {
-        var configStuffs = LoaderConfig.GetStuff();
-
-        foreach (var configStuff in configStuffs)
-        {
-            Items.Add(new MarketStuff(configStuff.Id, configStuff.Category, 0, 1));
-        }
+        Items = items;
     }
 
     public int GetAmount(string id)
@@ -62,13 +57,56 @@ public class MarketStorage
     }
 }
 
+public enum TransactionType
+{
+    Buy,
+    Sell,
+    Transfer
+}
+
+public enum Priority
+{
+    Low,
+    Medium,
+    High
+}
+
+public class MarketTransaction
+{
+    public string ItemId { get; set; }
+    public int Amount { get; set; }
+    public double Price { get; set; }
+    public string BuyerId { get; set; }
+    public string SellerId { get; set; }
+    public TransactionType Type { get; set; }
+    public Priority Priority { get; set; }
+}
+
 public class Market
 {
-    private MarketStorage marketStorage = new();
+    private MarketStorage Storage { get; }
+    public List<MarketTransaction> PendingTransactions { get; } = new();
+
+    public Market(MarketStorage storage)
+    {
+        Storage = storage;
+    }
+
+    public void ProcessDailyTransactions()
+    {
+    }
+
+    public void AddBuyOrderFromPopulation(PopulationSegment segment, string itemId, int amount)
+    {
+    }
+
+    public void AddBuyOrderFromBuilding(Building building, string itemId, int amount)
+    {
+    }
 
     public Dictionary<string, List<Dictionary<string, double>>> GetMarketStatistics()
     {
-        return marketStorage.Items.ToDictionary(
+        return Storage.Items.ToDictionary(
             storage => storage.Id, storage => new List<Dictionary<string, double>>
             {
                 new()
@@ -77,5 +115,33 @@ public class Market
                     { "Price", storage.Price }
                 }
             });
+    }
+
+    private void UpdatePrices()
+    {
+        foreach (var item in Storage.Items)
+        {
+            var demand = PendingTransactions
+                .Where(t => t.ItemId == item.Id && t.Type == TransactionType.Buy)
+                .Sum(t => t.Amount);
+
+            var supply = item.Amount + PendingTransactions
+                .Where(t => t.ItemId == item.Id && t.Type == TransactionType.Sell)
+                .Sum(t => t.Amount);
+
+            var newPrice = item.Price;
+
+            if (demand > supply)
+            {
+                newPrice = item.Price * (1.0 + (demand - supply) / (double)Math.Max(1, supply) * 0.1);
+            }
+            else if (supply > demand)
+            {
+                newPrice = item.Price * (1.0 - (supply - demand) / (double)Math.Max(1, demand) * 0.05);
+            }
+
+            newPrice = Math.Max(0.1, Math.Min(newPrice, item.Price * 1.5));
+            Storage.ChangePrice(item.Id, newPrice);
+        }
     }
 }

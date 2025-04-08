@@ -3,13 +3,14 @@
 public class Country
 {
     public string Id { get; }
-    public Market NationalMarket { get; } = new();
+    public Market NationalMarket { get; }
     public List<Province> Provinces { get; }
 
-    public Country(string id, List<Province> provinces)
+    public Country(string id, List<Province> provinces, Market market)
     {
         Id = id;
         Provinces = provinces;
+        NationalMarket = market;
     }
 
     public void Update()
@@ -19,16 +20,4 @@ public class Country
             province.Update();
         }
     }
-
-    // public Dictionary<string, Dictionary<string, int>> GetProvinceStatistics()
-    // {
-    //     var countryStats = new Dictionary<string, Dictionary<string, int>>();
-    //
-    //     foreach (var province in Provinces)
-    //     {
-    //         countryStats[province.Id] = province.GetMarketStatistics();
-    //     }
-    //
-    //     return countryStats;
-    // }
 }

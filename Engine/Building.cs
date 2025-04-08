@@ -11,7 +11,7 @@ public class Building
     public int Level { get; }
     public int OutputMultiplayer { get; }
     public int MaxEmployeesPerLevel { get; }
-    public int CurrentEmployees { get; }
+    public int CurrentEmployees { get; set; }
 
     public List<Dictionary<string, int>> InputStuff { get; }
     public List<Dictionary<string, int>> OutputStuff { get; }
